@@ -65,15 +65,38 @@
       gap: 12px;
     }
     button {
-      padding: 6px 10px;
+      padding: 6px 12px;
       font-size: 0.9rem;
       cursor: pointer;
       border: 1px solid #cccccc;
       border-radius: 4px;
-      background: #f5f5f5;
+      background: #f9f9f9;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      transition: background 0.2s ease, box-shadow 0.2s ease;
     }
     button:hover {
-      background: #eaeaea;
+      background: #efefef;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+
+    /* Icon buttons for action controls */
+    .iconButton {
+      padding: 6px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      background: #f9f9f9;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .iconButton:hover {
+      background: #efefef;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
     }
     #legend {
       display: flex;
@@ -206,25 +229,45 @@
       <svg id="aimChart" role="img" aria-label="Aspirational Identity Map"></svg>
     </div>
     <div id="sidebar">
-      <button id="resetBtn" aria-label="Reset the map to global view">Reset</button>
       <div id="legend" aria-label="Pillar legend"></div>
 
-      <!-- Toggle to switch confidence heatmap on/off -->
-      <div id="confidenceToggleContainer" style="font-size:0.85rem; display:flex; align-items:center; cursor:pointer; gap:4px;">
-        <input type="checkbox" id="confidenceToggle" aria-label="Toggle confidence heatmap">
-        <span>Show confidence heatmap</span>
+      <!-- Toggle to switch alignment heatmap on/off -->
+      <div id="confidenceToggleContainer" style="font-size:0.85rem; display:flex; align-items:center; cursor:pointer; gap:4px; margin-top:8px;">
+        <input type="checkbox" id="confidenceToggle" aria-label="Toggle alignment heatmap">
+        <span>Alignment heatmap</span>
       </div>
 
-      <!-- Button to open the data management overlay -->
-      <button id="viewTableBtn" aria-label="Edit data">Edit data</button>
+      <!-- Action buttons: reset and view data grouped together -->
+      <div id="actionButtons" style="display:flex; gap:8px; margin-top:8px;">
+        <!-- Icon-only buttons with tooltips -->
+        <!-- Reset button: large circular arrow -->
+        <button id="resetBtn" class="iconButton" aria-label="Reload map" title="Reload map">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <!-- Simplified circular reload arrow icon for better recognisability -->
+            <path d="M12 4V1L6 7l6 6V8a6 6 0 1 1-6 6H5a7 7 0 1 0 7-7z" fill="currentColor"/>
+          </svg>
+        </button>
+        <!-- Upload button: up arrow with line -->
+        <button id="uploadBtn" class="iconButton" aria-label="Upload CSV" title="Upload CSV">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 5l5 5h-3v6h-4v-6H7l5-5zm-7 14h14v2H5v-2z" fill="currentColor"/>
+          </svg>
+        </button>
+        <!-- View data button: grid icon -->
+        <button id="viewTableBtn" class="iconButton" aria-label="View data" title="View data">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
 
       <!-- Lenses block -->
       <div id="lensesBlock" style="margin-top:12px; max-width:200px;" aria-label="Lenses section">
-        <div style="font-weight:600; margin-bottom:4px;">Lenses</div>
+        <!-- Title will be updated dynamically (e.g. "Team lenses" when filtering) -->
+        <div id="lensesTitle" style="font-weight:600; margin-bottom:4px;">Lenses</div>
         <div id="lensesList" style="font-size:0.85rem; color:#333;">No lenses</div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" aria-label="CSV file input">
-      <!-- Remove download example link since export is available in table view -->
     </div>
   </div>
   <div id="tooltip" role="tooltip" aria-hidden="true"></div>
@@ -235,13 +278,18 @@
       <div style="margin: 6px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <label for="editTitleInput" style="font-size:0.85rem;">Name:</label>
         <input type="text" id="editTitleInput" placeholder="Enter map name" style="flex:1; min-width:150px; padding:4px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px;">
-        <button id="downloadCsvBtn" aria-label="Download CSV" style="padding:6px 10px; font-size:0.85rem;">Download CSV</button>
-        <button id="uploadCsvBtn" aria-label="Upload CSV" style="padding:6px 10px; font-size:0.85rem;">Upload CSV</button>
+        <!-- Download CSV: icon-only button inside overlay -->
+        <button id="downloadCsvBtn" class="iconButton" aria-label="Download CSV" title="Download CSV">
+          <!-- Down arrow icon with line -->
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 2v14m0 0l-5-5m5 5l5-5M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </button>
       </div>
-      <input type="search" id="tableSearch" placeholder="Search belief…" aria-label="Search beliefs">
+      <input type="search" id="tableSearch" placeholder="Search title or belief…" aria-label="Search titles or beliefs">
       <table id="nodeTable">
         <thead>
-          <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Label</th><th>Belief</th><th>Confidence</th></tr>
+        <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Title</th><th>Belief</th><th>Alignment</th><th>Applies to</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -270,7 +318,15 @@
     // Maximum characters allowed in the centre belief (core/pillar/sub).  A
     // lower limit reduces overflow in the core view.  Full text remains
     // accessible via the tooltip.
-    const centerMaxChars = 70;
+    // Maximum characters for centre beliefs (core/pillar/sub) when displayed in the
+    // centre of the chart.  Increase this limit slightly to show more of the
+    // belief text in the centre view.  Titles are not used in the centre; we
+    // always display truncated belief text here.
+    // Allow more characters for the belief shown in the centre of the chart.
+    // This value is used to truncate the core/pillar/sub beliefs when they
+    // appear in the centre.  Increase the limit to show more of the
+    // underlying belief text while still fitting within the available space.
+    const centerBeliefMaxChars = 120;
     // Base RGB colours for the three pillars
     const pillarBases = [
       [42, 161, 152],    // teal
@@ -279,6 +335,49 @@
     ];
     // Alpha values by depth (1: pillars, 2: subs, 3: micros)
     const depthAlpha = {1: 0.25, 2: 0.20, 3: 0.18};
+
+    // Alignment categories mapping numeric values (0–100) into descriptive
+    // buckets for user‑friendly display.  Each category has a label and an
+    // inclusive numeric range.  Modify these ranges to tune the grouping.
+    const alignmentCategories = [
+      { label: 'Low alignment', min: 0, max: 39 },
+      { label: 'Moderate alignment', min: 40, max: 69 },
+      { label: 'High alignment', min: 70, max: 89 },
+      { label: 'Very high alignment', min: 90, max: 100 }
+    ];
+
+    /**
+     * Maps a numeric alignment/confidence value to a categorical label.
+     * @param {number} val Numeric value 0–100
+     * @returns {string} Category label
+     */
+    function getAlignmentLabel(val) {
+      if (typeof val !== 'number' || isNaN(val)) return '';
+      const v = Math.max(0, Math.min(100, val));
+      for (const cat of alignmentCategories) {
+        if (v >= cat.min && v <= cat.max) return cat.label;
+      }
+      return '';
+    }
+
+    /**
+     * Formats a date string into "MMM DD, YYYY" (e.g. "Apr 10, 2025").  The
+     * input may be ISO (YYYY-MM-DD), slash-separated (YYYY/MM/DD) or a
+     * human-readable date.  If the date cannot be parsed, returns an empty
+     * string.  Leading zeros are removed from the day number.
+     * @param {string} dateStr Raw date string
+     * @returns {string} Formatted date or empty string
+     */
+    function formatDate(dateStr) {
+      if (!dateStr || typeof dateStr !== 'string') return '';
+      const date = new Date(dateStr);
+      if (isNaN(date)) return '';
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const month = months[date.getMonth()];
+      const day = date.getDate();
+      const year = date.getFullYear();
+      return `${month} ${day}, ${year}`;
+    }
     // Data model for the current AIM dataset
     let aimData = null;
     // Current visual state: 'A' (global), 'B' (pillar focus), 'C' (sub focus)
@@ -360,9 +459,10 @@
     // Setup file input for CSV loading
     const fileInput = document.getElementById('csvFileInput');
     // Bind upload CSV button (inside the table overlay) to trigger the hidden file input
-    const uploadCsvBtn = document.getElementById('uploadCsvBtn');
-    if (uploadCsvBtn) {
-      uploadCsvBtn.addEventListener('click', () => {
+    // Upload button in the sidebar (up arrow icon)
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', () => {
         if (fileInput) fileInput.click();
       });
     }
@@ -372,19 +472,11 @@
 
     // Reset button
     document.getElementById('resetBtn').addEventListener('click', () => {
-      // Reset visual state
-      currentState = 'A';
-      selectedPillar = null;
-      selectedSub = null;
-      preselectedSub = null;
-      // Disable confidence heatmap
-      showConfidence = false;
-      // Uncheck the confidence toggle UI if present
-      if (confidenceToggle) confidenceToggle.checked = false;
-      // Redraw chart, legend and lenses
-      updateChart();
-      updateLegend();
-      updateLenses();
+      // When reset is clicked, reload the page to ensure the latest CSV is
+      // loaded (including any changes on disk).  This will also reset
+      // the visual state and disable the heatmap.  Use location.reload()
+      // which preserves query parameters but forces a fresh read of the CSV.
+      window.location.reload();
     });
 
     // Table view controls
@@ -449,15 +541,16 @@
         if (!aimData) return;
         const rows = [];
         // Meta rows (no confidence values)
-        rows.push({ label: 'title', belief: aimData.title || '', confidence: '' });
-        rows.push({ label: 'mode', belief: aimData.mode || '', confidence: '' });
+        rows.push({ label: 'title', title: '', belief: aimData.title || '', confidence: '', pillars: '' });
+        rows.push({ label: 'mode', title: '', belief: aimData.mode || '', confidence: '', pillars: '' });
         // Pillar names (no confidence values)
         for (let i = 1; i <= 3; i++) {
-          rows.push({ label: `pillar_name:${i}`, belief: aimData.pillarNames[i] || '', confidence: '' });
+          rows.push({ label: `pillar_name:${i}`, title: '', belief: aimData.pillarNames[i] || '', confidence: '', pillars: '' });
         }
         // Lenses (if any).  Each lens is stored under lens:1, lens:2, etc.
         if (aimData.lenses && aimData.lenses.length > 0) {
           aimData.lenses.forEach((lensObj, idx) => {
+            const title = typeof lensObj.title === 'string' ? lensObj.title : '';
             const belief = typeof lensObj.belief === 'string' ? lensObj.belief : '';
             const conf = (typeof lensObj.confidence === 'number') ? lensObj.confidence : '';
             // Join pillar attachments into a semicolon‑separated string for export
@@ -465,28 +558,29 @@
             if (Array.isArray(lensObj.pillars) && lensObj.pillars.length > 0) {
               pillarsStr = lensObj.pillars.join(';');
             }
-            rows.push({ label: `lens:${idx + 1}`, belief: belief, confidence: conf, pillars: pillarsStr });
+            rows.push({ label: `lens:${idx + 1}`, title: title, belief: belief, confidence: conf, pillars: pillarsStr });
           });
         }
         // Core belief with confidence
-        rows.push({ label: 'core', belief: aimData.core.belief || '', confidence: aimData.core.confidence || 50 });
+        rows.push({ label: 'core', title: aimData.core.title || '', belief: aimData.core.belief || '', confidence: aimData.core.confidence || 50, pillars: '' });
         // Pillars with confidence
         for (let p = 1; p <= 3; p++) {
-          rows.push({ label: `pillar:${p}`, belief: aimData.pillars[p].belief || '', confidence: aimData.pillars[p].confidence || 50 });
+          rows.push({ label: `pillar:${p}`, title: aimData.pillars[p].title || '', belief: aimData.pillars[p].belief || '', confidence: aimData.pillars[p].confidence || 50, pillars: '' });
         }
         // Subs and micros with confidence
         for (let p = 1; p <= 3; p++) {
           for (let s = 1; s <= 3; s++) {
-            rows.push({ label: `sub:${p}:${s}`, belief: aimData.subs[p][s].belief || '', confidence: aimData.subs[p][s].confidence || 50 });
+            rows.push({ label: `sub:${p}:${s}`, title: aimData.subs[p][s].title || '', belief: aimData.subs[p][s].belief || '', confidence: aimData.subs[p][s].confidence || 50, pillars: '' });
             for (let m = 1; m <= 3; m++) {
-              rows.push({ label: `micro:${p}:${s}:${m}`, belief: aimData.micros[p][s][m].belief || '', confidence: aimData.micros[p][s][m].confidence || 50 });
+              rows.push({ label: `micro:${p}:${s}:${m}`, title: aimData.micros[p][s][m].title || '', belief: aimData.micros[p][s][m].belief || '', confidence: aimData.micros[p][s][m].confidence || 50, pillars: '' });
             }
           }
         }
         // Convert to CSV including the confidence column
         // Include the pillars column when exporting lenses.  The csvFormat
         // function will include empty values for non‑lens rows automatically.
-        const csvContent = d3.csvFormat(rows, ['label','belief','confidence','pillars']);
+        // When exporting, include the title column in addition to belief and confidence.
+        const csvContent = d3.csvFormat(rows, ['label','title','belief','confidence','pillars']);
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -509,19 +603,11 @@
         }
         return;
       }
-      // Escape resets the map
+      // Escape performs the same as clicking the reset button: reload the page
       if (event.key === 'Escape') {
-        currentState = 'A';
-        selectedPillar = null;
-        selectedSub = null;
-        preselectedSub = null;
-        // Also disable confidence heatmap on reset
-        showConfidence = false;
-        if (confidenceToggle) confidenceToggle.checked = false;
-        updateChart();
-        updateLegend();
-        updateLenses();
         event.preventDefault();
+        // Reload page to refresh dataset and state
+        window.location.reload();
       }
       // 1,2,3 keys open pillar focus
       if (event.key === '1' || event.key === '2' || event.key === '3') {
@@ -636,6 +722,7 @@ micro:3:3:3,Follow-up closes the loop`;
       rows.forEach(row => {
         if (!row.label) return;
         const label = String(row.label).trim().toLowerCase();
+        const title = row.title !== undefined ? String(row.title).trim() : '';
         const belief = row.belief !== undefined ? String(row.belief).trim() : '';
         // Parse optional confidence column (0-100).  Default to 50 if missing or invalid
         let confidence = 50;
@@ -645,6 +732,8 @@ micro:3:3:3,Follow-up closes the loop`;
             confidence = Math.max(0, Math.min(100, num));
           }
         }
+        // Parse optional updated timestamp.  Store as a string for later formatting.  Empty if not provided.
+        const updated = row.updated !== undefined ? String(row.updated).trim() : '';
         if (label === 'title') {
           data.title = belief;
           return;
@@ -661,15 +750,17 @@ micro:3:3:3,Follow-up closes the loop`;
           return;
         }
         if (label === 'core') {
-          // Store core belief and confidence
-          data.core = { label: 'Core', belief: belief, confidence: confidence };
+          // Store core belief and confidence along with optional title
+          data.core = { label: 'Core', title: title || '', belief: belief, confidence: confidence, updated: updated };
           return;
         }
         if (label.startsWith('pillar:')) {
           const idx = parseInt(label.split(':')[1]);
-          if (!data.pillars[idx]) data.pillars[idx] = { belief: '', confidence: 50 };
+          if (!data.pillars[idx]) data.pillars[idx] = { title: '', belief: '', confidence: 50 };
+          data.pillars[idx].title = title || '';
           data.pillars[idx].belief = belief;
           data.pillars[idx].confidence = confidence;
+          data.pillars[idx].updated = updated;
           return;
         }
         if (label.startsWith('sub:')) {
@@ -677,9 +768,11 @@ micro:3:3:3,Follow-up closes the loop`;
           const p = parseInt(parts[1]);
           const s = parseInt(parts[2]);
           if (!data.subs[p]) data.subs[p] = {};
-          if (!data.subs[p][s]) data.subs[p][s] = { belief: '', confidence: 50 };
+          if (!data.subs[p][s]) data.subs[p][s] = { title: '', belief: '', confidence: 50 };
+          data.subs[p][s].title = title || '';
           data.subs[p][s].belief = belief;
           data.subs[p][s].confidence = confidence;
+          data.subs[p][s].updated = updated;
           return;
         }
         if (label.startsWith('micro:')) {
@@ -689,7 +782,7 @@ micro:3:3:3,Follow-up closes the loop`;
           const m = parseInt(parts[3]);
           if (!data.micros[p]) data.micros[p] = {};
           if (!data.micros[p][s]) data.micros[p][s] = {};
-          data.micros[p][s][m] = { belief: belief, confidence: confidence };
+          data.micros[p][s][m] = { title: title || '', belief: belief, confidence: confidence, updated: updated };
           return;
         }
         // Lenses: any label starting with 'lens' will be treated as a lens entry.
@@ -713,7 +806,7 @@ micro:3:3:3,Follow-up closes the loop`;
                 }
               });
             }
-            data.lenses.push({ belief: belief, confidence: confidence, pillars: pillarsList });
+            data.lenses.push({ title: title || '', belief: belief, confidence: confidence, pillars: pillarsList, updated: updated });
           }
           return;
         }
@@ -723,15 +816,15 @@ micro:3:3:3,Follow-up closes the loop`;
         ? ['Outer Self','Inner Self','Relationships']
         : ['Team','Revenue','Customer'];
       for (let i = 1; i <= 3; i++) {
-        if (!data.pillars[i]) data.pillars[i] = { belief: '', confidence: 50 };
+        if (!data.pillars[i]) data.pillars[i] = { title:'', belief: '', confidence: 50, updated: '' };
         if (!data.pillarNames[i]) data.pillarNames[i] = defaultNames[i - 1];
         if (!data.subs[i]) data.subs[i] = {};
         if (!data.micros[i]) data.micros[i] = {};
         for (let j = 1; j <= 3; j++) {
-          if (!data.subs[i][j]) data.subs[i][j] = { belief: '', confidence: 50 };
+          if (!data.subs[i][j]) data.subs[i][j] = { title:'', belief: '', confidence: 50, updated: '' };
           if (!data.micros[i][j]) data.micros[i][j] = {};
           for (let k = 1; k <= 3; k++) {
-            if (!data.micros[i][j][k]) data.micros[i][j][k] = { belief: '', confidence: 50 };
+            if (!data.micros[i][j][k]) data.micros[i][j][k] = { title:'', belief: '', confidence: 50, updated: '' };
           }
         }
       }
@@ -878,14 +971,29 @@ micro:3:3:3,Follow-up closes the loop`;
      */
     function updateLenses() {
       const listEl = document.getElementById('lensesList');
+      const titleEl = document.getElementById('lensesTitle');
       if (!listEl) return;
-      if (!aimData || !aimData.lenses || aimData.lenses.length === 0) {
+      // Determine the set of lenses to display based on current pillar selection
+      let lenses = aimData && Array.isArray(aimData.lenses) ? aimData.lenses.slice() : [];
+      let titlePrefix = '';
+      // If in pillar or sub focus, filter to lenses that apply to the selected pillar
+      if ((currentState === 'B' || currentState === 'C') && selectedPillar && Array.isArray(lenses)) {
+        lenses = lenses.filter(l => Array.isArray(l.pillars) && l.pillars.includes(selectedPillar));
+        const pName = aimData && aimData.pillarNames ? aimData.pillarNames[selectedPillar] : '';
+        titlePrefix = pName ? `${pName} ` : '';
+      }
+      // Update the lenses section title
+      if (titleEl) {
+        const titleText = titlePrefix ? `${titlePrefix}Lenses` : 'Lenses';
+        titleEl.textContent = titleText;
+      }
+      if (!lenses || lenses.length === 0) {
         listEl.textContent = 'No lenses';
       } else {
-        // Clear existing
+        // Clear existing list
         listEl.innerHTML = '';
         // Sort lenses by confidence descending and take top 5
-        const sorted = aimData.lenses.slice().sort((a, b) => {
+        const sorted = lenses.sort((a, b) => {
           const ca = (typeof a.confidence === 'number') ? a.confidence : 50;
           const cb = (typeof b.confidence === 'number') ? b.confidence : 50;
           return cb - ca;
@@ -908,23 +1016,23 @@ micro:3:3:3,Follow-up closes the loop`;
             const heat = computeHeatColor((typeof lens.confidence === 'number') ? lens.confidence : 50);
             color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
           } else {
-            // neutral grey dot when confidence heatmap is off
             color = '#888888';
           }
           dot.style.backgroundColor = color;
           container.appendChild(dot);
-          // Lens text (truncate long lenses for display).  Add title attribute to show full text on hover.
+          // Lens title or truncated belief text for display
           const textSpan = document.createElement('span');
-          const lensText = typeof lens.belief === 'string' ? lens.belief.trim() : '';
-          const displayText = lensText.length > 50 ? lensText.slice(0, 47).trim() + '…' : lensText;
+          const baseText = (lens.title && lens.title.length > 0) ? lens.title.trim() : (typeof lens.belief === 'string' ? lens.belief.trim() : '');
+          const displayText = baseText.length > 50 ? baseText.slice(0, 47).trim() + '…' : baseText;
           textSpan.textContent = displayText;
           textSpan.style.flex = '1';
           textSpan.style.fontSize = '0.85rem';
           textSpan.style.color = '#333';
-          // Use title attribute to show full lens text on hover
-          textSpan.setAttribute('title', lensText);
+          // Full text in title attribute for native tooltip
+          const fullLensText = (typeof lens.belief === 'string') ? lens.belief.trim() : '';
+          textSpan.setAttribute('title', fullLensText);
           container.appendChild(textSpan);
-          // Append small coloured squares for pillar attachments
+          // Attachment squares for associated pillars (always base colours)
           if (Array.isArray(lens.pillars) && lens.pillars.length > 0) {
             const attachContainer = document.createElement('span');
             attachContainer.style.display = 'flex';
@@ -936,26 +1044,20 @@ micro:3:3:3,Follow-up closes the loop`;
               sq.style.height = '8px';
               sq.style.borderRadius = '2px';
               const rgb = pillarBases[pillarIdx - 1] || [136,136,136];
-              let attachColor;
-              if (showConfidence) {
-                const heat = computeHeatColor((typeof lens.confidence === 'number') ? lens.confidence : 50);
-                attachColor = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
-              } else {
-                attachColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-              }
+              const attachColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
               sq.style.backgroundColor = attachColor;
               attachContainer.appendChild(sq);
             });
             container.appendChild(attachContainer);
           }
-          // Add custom tooltip events for lenses.  We reuse showTooltip/hideTooltip
+          // Add tooltip events for lens
           container.addEventListener('mouseenter', (e) => {
             showTooltip(e, lens);
           });
           container.addEventListener('mousemove', (e) => {
             moveTooltip(e);
           });
-          container.addEventListener('mouseleave', (e) => {
+          container.addEventListener('mouseleave', () => {
             hideTooltip();
           });
           listEl.appendChild(container);
@@ -1014,6 +1116,8 @@ micro:3:3:3,Follow-up closes the loop`;
       currentState = 'B';
       updateChart();
       updateLegend();
+      // Update the lenses list when switching pillars via the legend
+      updateLenses();
       // Flash the sub ring to indicate navigation
       setTimeout(() => flashRing(currentRingRadii.B.subStart, currentRingRadii.B.subEnd), 0);
     }
@@ -1159,8 +1263,10 @@ micro:3:3:3,Follow-up closes the loop`;
           const start = (p - 1) * majorStep;
           const end = p * majorStep;
           const belief = aimData.pillars[p].belief;
+          const title = aimData.pillars[p].title || belief;
           const conf = aimData.pillars[p].confidence || 50;
-          const label = truncateText(belief, maxCharsByDepth[1]);
+          // Use provided title if available; otherwise truncate belief for label
+          const label = truncateText(title || belief, maxCharsByDepth[1]);
           descriptors.push({
             depth: 1,
             pillar: p,
@@ -1180,8 +1286,9 @@ micro:3:3:3,Follow-up closes the loop`;
             const sStart = start + (s - 1) * subStep;
             const sEnd = sStart + subStep;
             const beliefSub = aimData.subs[p][s].belief;
+            const titleSub = aimData.subs[p][s].title || beliefSub;
             const confSub = aimData.subs[p][s].confidence || 50;
-            const labelSub = truncateText(beliefSub, maxCharsByDepth[2]);
+            const labelSub = truncateText(titleSub || beliefSub, maxCharsByDepth[2]);
             descriptors.push({
               depth: 2,
               pillar: p,
@@ -1201,8 +1308,9 @@ micro:3:3:3,Follow-up closes the loop`;
               const mStart = sStart + (m - 1) * microStep;
               const mEnd = mStart + microStep;
               const beliefMicro = aimData.micros[p][s][m].belief;
+              const titleMicro = aimData.micros[p][s][m].title || beliefMicro;
               const confMicro = aimData.micros[p][s][m].confidence || 50;
-              const labelMicro = truncateText(beliefMicro, maxCharsByDepth[3]);
+              const labelMicro = truncateText(titleMicro || beliefMicro, maxCharsByDepth[3]);
               descriptors.push({
                 depth: 3,
                 pillar: p,
@@ -1231,8 +1339,9 @@ micro:3:3:3,Follow-up closes the loop`;
           const sStart = (s - 1) * subStep;
           const sEnd = sStart + subStep;
           const beliefSub = aimData.subs[p][s].belief;
+          const titleSub = aimData.subs[p][s].title || beliefSub;
           const confSub = aimData.subs[p][s].confidence || 50;
-          const labelSub = truncateText(beliefSub, maxCharsByDepth[2]);
+          const labelSub = truncateText(titleSub || beliefSub, maxCharsByDepth[2]);
           descriptors.push({
             depth: 2,
             pillar: p,
@@ -1254,8 +1363,9 @@ micro:3:3:3,Follow-up closes the loop`;
               const mStart = idx * microStep;
               const mEnd = mStart + microStep;
               const beliefMicro = aimData.micros[p][s][m].belief;
+              const titleMicro = aimData.micros[p][s][m].title || beliefMicro;
               const confMicro = aimData.micros[p][s][m].confidence || 50;
-              const labelMicro = truncateText(beliefMicro, maxCharsByDepth[3]);
+              const labelMicro = truncateText(titleMicro || beliefMicro, maxCharsByDepth[3]);
               descriptors.push({
                 depth: 3,
                 pillar: p,
@@ -1282,8 +1392,9 @@ micro:3:3:3,Follow-up closes the loop`;
           const mStart = (m - 1) * microStep;
           const mEnd = mStart + microStep;
           const beliefMicro = aimData.micros[p][s][m].belief;
+          const titleMicro = aimData.micros[p][s][m].title || beliefMicro;
           const confMicro = aimData.micros[p][s][m].confidence || 50;
-          const labelMicro = truncateText(beliefMicro, maxCharsByDepth[3]);
+          const labelMicro = truncateText(titleMicro || beliefMicro, maxCharsByDepth[3]);
           descriptors.push({
             depth: 3,
             pillar: p,
@@ -1508,17 +1619,16 @@ micro:3:3:3,Follow-up closes the loop`;
      */
     function drawCenterText(g) {
       if (currentState === 'A') {
-        // Global view: show a "Core" label followed by the truncated core belief.
+        // Global view: show a "Core" label followed by the truncated core belief (not title).
         const radii = currentRingRadii.A;
         const textGroup = g.append('g').attr('pointer-events','none');
-        const coreBeliefFull = aimData.core.belief || '';
-        // Truncate the core belief to the configured maximum characters
-        const truncated = truncateText(coreBeliefFull, centerMaxChars);
-        // Determine a wrap length based on the radius to prevent overflow
+        // Always use the core belief for the centre text
+        const coreBelief = aimData.core.belief || '';
+        const truncated = truncateText(coreBelief, centerBeliefMaxChars);
         const wrapLen = Math.max(8, Math.floor(radii.coreEnd / 8));
-        const beliefLines = wrapLines(truncated, wrapLen);
+        const linesBelief = wrapLines(truncated, wrapLen);
         // Build array of lines: first the label, then the belief lines
-        const lines = ['Core', ...beliefLines];
+        const lines = ['Core', ...linesBelief];
         // Compute font size relative to radius and number of lines
         const fontSize = Math.min(radii.coreEnd / (lines.length + 1), 18);
         const textEl = textGroup.append('text')
@@ -1538,12 +1648,12 @@ micro:3:3:3,Follow-up closes the loop`;
         const radii = currentRingRadii.B;
         const textGroup = g.append('g').attr('pointer-events','none');
         const pillarLabel = aimData.pillarNames[selectedPillar] || '';
-        const pillarBeliefFull = aimData.pillars[selectedPillar].belief || '';
-        // Truncate the pillar belief and wrap relative to radius
-        const truncated = truncateText(pillarBeliefFull, centerMaxChars);
+        // Always use the pillar belief (not title) in the centre
+        const pillarBelief = aimData.pillars[selectedPillar].belief || '';
+        const truncated = truncateText(pillarBelief, centerBeliefMaxChars);
         const wrapLen = Math.max(8, Math.floor(radii.center / 8));
-        const beliefLines = wrapLines(truncated, wrapLen);
-        const lines = [pillarLabel, ...beliefLines];
+        const linesBelief = wrapLines(truncated, wrapLen);
+        const lines = [pillarLabel, ...linesBelief];
         const fontSize = Math.min(radii.center / (lines.length + 1), 18);
         const textEl = textGroup.append('text')
           .attr('text-anchor','middle')
@@ -1558,11 +1668,12 @@ micro:3:3:3,Follow-up closes the loop`;
             .text(line);
         });
       } else if (currentState === 'C' && selectedPillar && selectedSub) {
-        // Sub focus: show the truncated sub belief only.
+        // Sub focus: show the truncated sub belief only (no label).
         const radii = currentRingRadii.C;
         const textGroup = g.append('g').attr('pointer-events','none');
-        const subBeliefFull = aimData.subs[selectedPillar][selectedSub].belief || '';
-        const truncated = truncateText(subBeliefFull, centerMaxChars);
+        // Always use the sub belief (not title)
+        const subBelief = aimData.subs[selectedPillar][selectedSub].belief || '';
+        const truncated = truncateText(subBelief, centerBeliefMaxChars);
         const wrapLen = Math.max(8, Math.floor(radii.center / 8));
         const lines = wrapLines(truncated, wrapLen);
         const fontSize = Math.min(radii.center / (lines.length + 1), 18);
@@ -1647,6 +1758,8 @@ micro:3:3:3,Follow-up closes the loop`;
           currentState = 'B';
           updateChart();
           updateLegend();
+          // Also refresh the lenses list when switching pillars
+          updateLenses();
           // Flash sub ring
           setTimeout(() => flashRing(currentRingRadii.B.subStart, currentRingRadii.B.subEnd), 0);
         } else if (d.depth === 2) {
@@ -1657,6 +1770,8 @@ micro:3:3:3,Follow-up closes the loop`;
           currentState = 'B';
           updateChart();
           updateLegend();
+          // Also refresh the lenses list when switching pillars via a sub click
+          updateLenses();
           // Flash sub ring
           setTimeout(() => flashRing(currentRingRadii.B.subStart, currentRingRadii.B.subEnd), 0);
         }
@@ -1669,6 +1784,8 @@ micro:3:3:3,Follow-up closes the loop`;
             preselectedSub = null;
             updateChart();
             updateLegend();
+            // Refresh lenses list when drilling down into a sub
+            updateLenses();
             // Flash micro ring in sub focus
             setTimeout(() => flashRing(currentRingRadii.C.microStart, currentRingRadii.C.microEnd), 0);
           } else {
@@ -1678,6 +1795,8 @@ micro:3:3:3,Follow-up closes the loop`;
             currentState = 'C';
             updateChart();
             updateLegend();
+            // Refresh lenses list when drilling down into a sub
+            updateLenses();
             setTimeout(() => flashRing(currentRingRadii.C.microStart, currentRingRadii.C.microEnd), 0);
           }
         }
@@ -1787,14 +1906,28 @@ micro:3:3:3,Follow-up closes the loop`;
       // Determine if this is a lens tooltip by checking for a pillars array and absence of hierarchical indices
       const isLens = d.hasOwnProperty('pillars') && !d.hasOwnProperty('pillar');
       if (isLens) {
-        // Lens tooltip: show full lens text and its associated pillars
+        // Lens tooltip: show full lens text, pillar attachments and confidence
         const lensText = d.belief || '';
         html += `<div style="font-size:15px; font-weight:600; margin-bottom:4px;">${lensText}</div>`;
-        // If attachments exist, list the pillar names
+        // Associated pillars names
         if (Array.isArray(d.pillars) && d.pillars.length > 0) {
           const names = d.pillars.map(idx => aimData.pillarNames[idx] || '').filter(s => s);
           if (names.length > 0) {
-            html += `<div style="font-size:12px; color:#555;">Applies to: ${names.join(', ')}</div>`;
+            html += `<div style="font-size:12px; color:#555; margin-bottom:2px;">↳ Applies to: ${names.join(', ')}</div>`;
+          }
+        }
+        // Alignment (confidence) line (if available)
+        if (typeof d.confidence === 'number') {
+          const alignLabel = getAlignmentLabel(d.confidence);
+          // Include numeric value for transparency
+          const confVal = Math.round(d.confidence);
+          html += `<div style="font-size:12px; color:#777;">Alignment: ${alignLabel} (${confVal}%)</div>`;
+        }
+        // Last updated date line if provided
+        if (d.updated && d.updated.trim()) {
+          const formattedDate = formatDate(d.updated);
+          if (formattedDate) {
+            html += `<div style="font-size:11px; color:#999;">Last updated: ${formattedDate}</div>`;
           }
         }
       } else {
@@ -1804,27 +1937,32 @@ micro:3:3:3,Follow-up closes the loop`;
         let currentText = aimData.core.belief || '';
         let parentLabel = '';
         let parentText = '';
+        let confValue = 50;
         if (d.micro) {
           currentLabel = 'Micro';
           currentText = aimData.micros[d.pillar][d.sub][d.micro].belief || '';
           parentLabel = 'Sub';
           parentText = aimData.subs[d.pillar][d.sub].belief || '';
+          confValue = aimData.micros[d.pillar][d.sub][d.micro].confidence || 50;
         } else if (d.sub) {
           currentLabel = 'Sub';
           currentText = aimData.subs[d.pillar][d.sub].belief || '';
           parentLabel = 'Pillar';
           parentText = aimData.pillars[d.pillar].belief || '';
+          confValue = aimData.subs[d.pillar][d.sub].confidence || 50;
         } else if (d.pillar) {
           currentLabel = 'Pillar';
           currentText = aimData.pillars[d.pillar].belief || '';
           parentLabel = 'Core';
           parentText = aimData.core.belief || '';
+          confValue = aimData.pillars[d.pillar].confidence || 50;
         } else {
           // Core belief
           currentLabel = 'Core';
           currentText = aimData.core.belief || '';
           parentLabel = '';
           parentText = '';
+          confValue = aimData.core.confidence || 50;
         }
         // Build HTML with larger font for hovered item
         html += `<div style="font-size:18px; font-weight:700; margin-bottom:4px;">`;
@@ -1833,11 +1971,31 @@ micro:3:3:3,Follow-up closes the loop`;
         }
         html += `${currentText}</div>`;
         if (parentText) {
-          html += `<div style="font-size:14px; color:#555;">`;
-          if (parentLabel) {
-            html += `<strong>${parentLabel}:</strong> `;
+          // include an arrow to visually indicate support relationship
+          html += `<div style="font-size:14px; color:#555;">↳ <strong>${parentLabel}:</strong> ${parentText}</div>`;
+        }
+        // Append alignment and last updated at the bottom
+        if (typeof confValue === 'number') {
+          const alignLabel = getAlignmentLabel(confValue);
+          const confVal = Math.round(confValue);
+          html += `<div style="font-size:12px; color:#777; margin-top:2px;">Alignment: ${alignLabel} (${confVal}%)</div>`;
+        }
+        // Determine last updated date for the current node
+        let updatedStr = '';
+        if (d.micro) {
+          updatedStr = aimData.micros[d.pillar][d.sub][d.micro].updated || '';
+        } else if (d.sub) {
+          updatedStr = aimData.subs[d.pillar][d.sub].updated || '';
+        } else if (d.pillar) {
+          updatedStr = aimData.pillars[d.pillar].updated || '';
+        } else {
+          updatedStr = aimData.core.updated || '';
+        }
+        if (updatedStr && updatedStr.trim()) {
+          const formattedDate = formatDate(updatedStr);
+          if (formattedDate) {
+            html += `<div style="font-size:11px; color:#999;">Last updated: ${formattedDate}</div>`;
           }
-          html += `${parentText}</div>`;
         }
       }
       tooltip.html(html);
@@ -1926,20 +2084,31 @@ micro:3:3:3,Follow-up closes the loop`;
       // Flatten nodes into an array for the table
       const rows = [];
       // Core
-      rows.push({ depth: 0, pillar: '', sub: '', micro: '', label: 'Core', belief: aimData.core.belief || '', confidence: aimData.core.confidence || 50 });
+      rows.push({ depth: 0, pillar: '', sub: '', micro: '', label: 'Core', title: aimData.core.title || '', belief: aimData.core.belief || '', confidence: aimData.core.confidence || 50 });
       for (let p = 1; p <= 3; p++) {
         // Pillar with confidence
-        rows.push({ depth: 1, pillar: p, sub: '', micro: '', label: aimData.pillarNames[p] || '', belief: aimData.pillars[p].belief || '', confidence: aimData.pillars[p].confidence || 50 });
+        rows.push({ depth: 1, pillar: p, sub: '', micro: '', label: aimData.pillarNames[p] || '', title: aimData.pillars[p].title || '', belief: aimData.pillars[p].belief || '', confidence: aimData.pillars[p].confidence || 50 });
         for (let s = 1; s <= 3; s++) {
           // Sub with confidence
-          rows.push({ depth: 2, pillar: p, sub: s, micro: '', label: '', belief: aimData.subs[p][s].belief || '', confidence: aimData.subs[p][s].confidence || 50 });
+          rows.push({ depth: 2, pillar: p, sub: s, micro: '', label: '', title: aimData.subs[p][s].title || '', belief: aimData.subs[p][s].belief || '', confidence: aimData.subs[p][s].confidence || 50 });
           for (let m = 1; m <= 3; m++) {
             // Micro with confidence
-            rows.push({ depth: 3, pillar: p, sub: s, micro: m, label: '', belief: aimData.micros[p][s][m].belief || '', confidence: aimData.micros[p][s][m].confidence || 50 });
+            rows.push({ depth: 3, pillar: p, sub: s, micro: m, label: '', title: aimData.micros[p][s][m].title || '', belief: aimData.micros[p][s][m].belief || '', confidence: aimData.micros[p][s][m].confidence || 50 });
           }
         }
       }
-      // Sort by depth then pillar/sub/micro
+      // Append lens rows before sorting so that they are included in the
+      // ordering.  Each lens row uses a depth value of 4 so that it sorts
+      // after micros and includes its belief, confidence and pillar names.
+      if (aimData.lenses && aimData.lenses.length > 0) {
+        aimData.lenses.forEach((lensObj, idx) => {
+          const names = Array.isArray(lensObj.pillars)
+            ? lensObj.pillars.map(p => aimData.pillarNames[p] || '').filter(Boolean)
+            : [];
+          rows.push({ depth: 4, pillar: '', sub: '', micro: '', label: `Lens ${idx + 1}`, title: lensObj.title || '', belief: lensObj.belief || '', confidence: lensObj.confidence !== undefined ? lensObj.confidence : '', applies: names.join(', ') });
+        });
+      }
+      // Sort by depth then pillar/sub/micro so that lens rows appear last
       rows.sort((a,b) => {
         if (a.depth !== b.depth) return a.depth - b.depth;
         if (a.pillar !== b.pillar) return (a.pillar || 0) - (b.pillar || 0);
@@ -1947,11 +2116,28 @@ micro:3:3:3,Follow-up closes the loop`;
         if (a.micro !== b.micro) return (a.micro || 0) - (b.micro || 0);
         return 0;
       });
-      // Populate table body
+      // Populate table body with eight columns (last column shows pillar names for lenses)
       tableBody.innerHTML = '';
       rows.forEach(r => {
+        const depthCell = (r.depth === 4 ? 'Lens' : r.depth);
+        const appliesText = (r.applies !== undefined ? r.applies : '');
+        // Compute alignment label from confidence if numeric
+        let alignCell = '';
+        if (typeof r.confidence === 'number' && !isNaN(r.confidence)) {
+          alignCell = getAlignmentLabel(r.confidence);
+        } else if (r.confidence !== undefined && r.confidence !== '') {
+          // If alignment stored as string, keep it
+          alignCell = r.confidence;
+        }
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.depth}</td><td>${r.pillar || ''}</td><td>${r.sub || ''}</td><td>${r.micro || ''}</td><td>${r.label}</td><td>${r.belief}</td><td>${r.confidence !== undefined ? r.confidence : ''}</td>`;
+        tr.innerHTML = `<td>${depthCell}</td>` +
+          `<td>${r.pillar || ''}</td>` +
+          `<td>${r.sub || ''}</td>` +
+          `<td>${r.micro || ''}</td>` +
+          `<td>${r.title !== undefined ? r.title : ''}</td>` +
+          `<td>${r.belief}</td>` +
+          `<td>${alignCell}</td>` +
+          `<td>${appliesText}</td>`;
         tableBody.appendChild(tr);
       });
     }
@@ -1963,8 +2149,10 @@ micro:3:3:3,Follow-up closes the loop`;
     function filterTable(search) {
       const trs = tableBody.querySelectorAll('tr');
       trs.forEach(tr => {
-        const belief = tr.children[5].textContent.toLowerCase();
-        if (!search || belief.indexOf(search) !== -1) {
+        // search both title and belief columns (indexes 4 and 5)
+        const title = tr.children[4] ? tr.children[4].textContent.toLowerCase() : '';
+        const belief = tr.children[5] ? tr.children[5].textContent.toLowerCase() : '';
+        if (!search || title.indexOf(search) !== -1 || belief.indexOf(search) !== -1) {
           tr.style.display = '';
         } else {
           tr.style.display = 'none';
