@@ -1,49 +1,49 @@
-label,belief,confidence
-title,Solution Keepers,
-mode,business,
-pillar_name:1,Team,
-pillar_name:2,Finance,
-pillar_name:3,Customer,
-core,"We build a thriving business that funds our lives, delights customers, and unites our team in purposeful, creative work.",0
-pillar:1,"We cultivate safety and clarity so each teammate thrives in a fulfilling role, shows up present, and grows together.",0
-pillar:2,"We design fair, simple economics: right customers, clear pricing, steady revenue that funds exciting salaries, travel, and reinvestment.",75
-pillar:3,"We align deeply with customers, crafting experiences they love and celebrating outcomes that change their lives.",0
-sub:1:1,"We create psychological safety where reliability, presence, and honest feedback are everyday norms.",0
-micro:1:1:1,"We keep meetings focused, cameras on, and attention present for shared outcomes.",0
-micro:1:1:2,"We address concerns early, kindly, and directly to protect trust.",0
-micro:1:1:3,"We set clear norms for availability, response times, and respectful debate.",0
-sub:1:2,"We activate strengths with clear ownership, reliable delivery, kept commitments, and presence on calls.",20
-micro:1:2:1,Each teammate builds an AIM map; we synthesize roles and entrepreneurial identity.,20
-micro:1:2:2,We work in three-day blocks and hit about 85% of commitments with steady progress.,20
-micro:1:2:3,We celebrate reliable delivery and coach gaps without drama or delay.,0
-sub:1:3,"We invest in learning, quarterly meetups, and mentoring that compound skills and chemistry.",0
-micro:1:3:1,We budget quarterly in‑person gatherings to deepen trust and spark ideas.,0
-micro:1:3:2,"We pair teammates for practice, feedback, and shared reading or demos.",0
-micro:1:3:3,We set personal growth plans that align with company goals.,0
-sub:2:1,"We reward contribution with exciting salaries, stability, and meaningful perks that energize commitment.",75
-micro:2:1:1,We tie pay bands to market data and transparent leveling rubrics.,75
-micro:2:1:2,We fund family‑friendly benefits that reduce stress and increase focus.,75
-micro:2:1:3,"We share upside through bonuses linked to clear, auditable outcomes.",75
-sub:2:2,"We set simple, fair pricing for a chosen segment, driving steady revenue and reinvestment.",75
-micro:2:2:1,"We document all pricing ideas, test rapidly, and converge on the clearest model.",75
-micro:2:2:2,We decide our primary customer segment before locking terms and packaging.,75
-micro:2:2:3,"We time implementation deliberately, with team iterations and explicit launch criteria.",75
-sub:2:3,"We invest in banking, tooling, and R&D that speed learning and compound customer value.",75
-micro:2:3:1,We finalize gōdō gaisha setup and bank accounts to receive revenue.,75
-micro:2:3:2,We standardize one operating system of tools across work and life.,75
-micro:2:3:3,"We allocate budget to experiments, feature tests, and quarterly team travel.",75
-sub:3:1,We target customers who value outcomes and feel proud to invest in themselves.,0
-micro:3:1:1,We define ideal segments and refine messaging until it resonates strongly.,0
-micro:3:1:2,"We position pricing like a gym membership—visible gains, steady habit, clear return.",0
-micro:3:1:3,"We publish case stories that reflect their goals, language, and context.",0
-sub:3:2,"We craft simple, supportive experiences that customers love, with reliable response and thoughtful touches.",0
-micro:3:2:1,We design onboarding that builds confidence quickly and celebrates early wins.,0
-micro:3:2:2,"We keep support responsive, kind, and human across every channel.",0
-micro:3:2:3,We close loops on feedback and show what changed and why.,0
-sub:3:3,"We celebrate customer outcomes loudly and often, amplifying stories and referrals with gratitude.",0
-micro:3:3:1,We invite testimonials that highlight life change and practical results.,0
-micro:3:3:2,We share milestones in community spaces and recognize customer contributions.,0
-micro:3:3:3,We thank referrers with thoughtful notes and visible appreciation.,0
-lens:1,Weekly connection calls with video; choose hours that support presence for all.,75
-lens:2,"Monthly alignment strategy: AIM alignment, product versus AIM, and deliverables review.",70
-lens:3,Plan quarterly in-person social meetup in Japan or Tunisia; visa-savvy rendezvous.,65
+label,title,belief,confidence,pillars,updated
+title,,Solution Keepers,,,
+mode,,business,,,
+pillar_name:1,,Team,,,
+pillar_name:2,,Finance,,,
+pillar_name:3,,Customer,,,
+core,,We build a thriving business that funds our lives, delights customers, and unites our team in purposeful, creative work.,0,,2025-10-12
+pillar:1,,We cultivate safety and clarity so each teammate thrives in a fulfilling role, shows up present, and grows together.,0,,2025-10-12
+pillar:2,,We design fair, simple economics: right customers, clear pricing... revenue that funds exciting salaries, travel, and reinvestment.,75,,2025-10-12
+pillar:3,,We align deeply with customers, crafting experiences they love and celebrating outcomes that change their lives.,0,,2025-10-12
+sub:1:1,,We create psychological safety where reliability, presence, and honest feedback are everyday norms.,0,,2025-10-12
+micro:1:1:1,,We keep meetings focused, cameras on, and attention present for shared outcomes.,0,,2025-10-12
+micro:1:1:2,,We address concerns early, kindly, and directly to protect trust.,0,,2025-10-12
+micro:1:1:3,,We set clear norms for availability, response times, and respectful debate.,0,,2025-10-12
+sub:1:2,,We activate strengths with clear ownership, reliable delivery, kept commitments, and presence on calls.,20,,2025-10-12
+micro:1:2:1,,Each teammate builds an AIM map; we synthesize roles and entrepreneurial identity.,20,,2025-10-12
+micro:1:2:2,,We work in three-day blocks and hit about 85% of commitments with steady progress.,20,,2025-10-12
+micro:1:2:3,,We celebrate reliable delivery and coach gaps without drama or delay.,0,,2025-10-12
+sub:1:3,,We invest in learning, quarterly meetups, and mentoring that compound skills and chemistry.,0,,2025-10-12
+micro:1:3:1,,We budget quarterly in‑person gatherings to deepen trust and spark ideas.,0,,2025-10-12
+micro:1:3:2,,We pair teammates for practice, feedback, and shared reading or demos.,0,,2025-10-12
+micro:1:3:3,,We set personal growth plans that align with company goals.,0,,2025-10-12
+sub:2:1,,We reward contribution with exciting salaries, stability, and meaningful perks that energize commitment.,75,,2025-10-12
+micro:2:1:1,,We tie pay bands to market data and transparent leveling rubrics.,75,,2025-10-12
+micro:2:1:2,,We fund family‑friendly benefits that reduce stress and increase focus.,75,,2025-10-12
+micro:2:1:3,,We share upside through bonuses linked to clear, auditable outcomes.,75,,2025-10-12
+sub:2:2,,We set simple, fair pricing for a chosen segment, driving steady revenue and reinvestment.,75,,2025-10-12
+micro:2:2:1,,We document all pricing ideas, test rapidly, and converge on the clearest model.,75,,2025-10-12
+micro:2:2:2,,We decide our primary customer segment before locking terms and packaging.,75,,2025-10-12
+micro:2:2:3,,We time implementation deliberately, with team iterations and explicit launch criteria.,75,,2025-10-12
+sub:2:3,,We invest in banking, tooling, and R&D that speed learning and compound customer value.,75,,2025-10-12
+micro:2:3:1,,We finalize gōdō gaisha setup and bank accounts to receive revenue.,75,,2025-10-12
+micro:2:3:2,,We standardize one operating system of tools across work and life.,75,,2025-10-12
+micro:2:3:3,,We allocate budget to experiments, feature tests, and quarterly team travel.,75,,2025-10-12
+sub:3:1,,We compassionately tune actions, reps, and cadence to each person’s evolving capacity.,20,,2025-10-12
+micro:3:1:1,,We define ideal segments and refine messaging until it resonates strongly.,0,,2025-10-12
+micro:3:1:2,,We position pricing like a gym membership—visible gains, steady habit, clear return.,0,,2025-10-12
+micro:3:1:3,,We publish case stories that reflect their goals, language, and context.,0,,2025-10-12
+sub:3:2,,We celebrate self‑initiated follow‑through, scaling recognition to effort, difficulty, and impact.,20,,2025-10-12
+micro:3:2:1,,We design onboarding that builds confidence quickly and celebrates early wins.,0,,2025-10-12
+micro:3:2:2,,We keep support responsive, kind, and human across every channel.,0,,2025-10-12
+micro:3:2:3,,We close loops on feedback and show what changed and why.,0,,2025-10-12
+sub:3:3,,We build synchrony and care—shared rhythms that deepen connection and sustain commitment.,20,,2025-10-12
+micro:3:3:1,,We invite testimonials that highlight life change and practical results.,0,,2025-10-12
+micro:3:3:2,,We share milestones in community spaces and recognize customer contributions.,0,,2025-10-12
+micro:3:3:3,,We thank referrers with thoughtful notes and visible appreciation.,0,,2025-10-12
+lens:1,Weekly video calls,Weekly connection calls with video; presence across time zones.,75,1;3,2025-10-12
+lens:2,Monthly alignment,Monthly AIM/product alignment and deliverables review.,70,1;2,2025-10-12
+lens:3,Quarterly meetups,Quarterly in‑person meetup in Japan or Tunisia; visa‑savvy rendezvous.,65,1,2025-10-12
