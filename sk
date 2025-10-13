@@ -1,53 +1,53 @@
 label,title,belief,confidence,pillars,updated
-title,,Solution Keepers,,,
-mode,,business,,,
-pillar_name:1,,Team,,,
-pillar_name:2,,Finance,,,
-pillar_name:3,,Customer,,,
-core,"Thrive, Delight, Unite","We build a thriving business that funds our lives, delights customers, and unites our team in purposeful, creative work.",0,,2025-10-12
-pillar:1,"Safety, Clarity, Growth","We cultivate safety and clarity so each teammate thrives in a fulfilling role, shows up present, and grows together.",0,,2025-10-12
-pillar:2,"Fair, Simple Economics","We design fair, simple economics: right customers, clear pricing... revenue that funds exciting salaries, travel, and reinvestment.",75,,2025-10-12
-pillar:3,Align & Celebrate Outcomes,"We align deeply with customers, crafting experiences they love and celebrating outcomes that change their lives.",0,,2025-10-12
-sub:1:1,Psychological Safety Daily,"We create psychological safety where reliability, presence, and honest feedback are everyday norms.",0,,2025-10-12
-micro:1:1:1,"Focused, Present Meetings","We keep meetings focused, cameras on, and attention present for shared outcomes.",0,,2025-10-12
-micro:1:1:2,Address Concerns Early,"We address concerns early, kindly, and directly to protect trust.",0,,2025-10-12
-micro:1:1:3,Clear Norms & Response Times,"We set clear norms for availability, response times, and respectful debate.",0,,2025-10-12
-sub:1:2,Own Strengths; Keep Commitments,"We activate strengths with clear ownership, reliable delivery, kept commitments, and presence on calls.",20,,2025-10-12
-micro:1:2:1,AIM Maps & Role Clarity,Each teammate builds an AIM map; we synthesize roles and entrepreneurial identity.,20,,2025-10-12
-micro:1:2:2,"Three‑Day Blocks, 85% Hits",We work in three-day blocks and hit about 85% of commitments with steady progress.,20,,2025-10-12
-micro:1:2:3,Celebrate Delivery; Coach Gaps,We celebrate reliable delivery and coach gaps without drama or delay.,0,,2025-10-12
-sub:1:3,"Learning, Meetups, Mentoring","We invest in learning, quarterly meetups, and mentoring that compound skills and chemistry.",0,,2025-10-12
-micro:1:3:1,Quarterly In‑Person Gatherings,We budget quarterly in‑person gatherings to deepen trust and spark ideas.,0,,2025-10-12
-micro:1:3:2,Pair Practice & Feedback,"We pair teammates for practice, feedback, and shared reading or demos.",0,,2025-10-12
-micro:1:3:3,Growth Plans Aligned,We set personal growth plans that align with company goals.,0,,2025-10-12
-sub:2:1,"Reward, Stability, Perks","We reward contribution with exciting salaries, stability, and meaningful perks that energize commitment.",75,,2025-10-12
-micro:2:1:1,Market‑Based Pay Bands,We tie pay bands to market data and transparent leveling rubrics.,75,,2025-10-12
-micro:2:1:2,Family‑Friendly Benefits,We fund family‑friendly benefits that reduce stress and increase focus.,75,,2025-10-12
-micro:2:1:3,Bonuses for Clear Outcomes,"We share upside through bonuses linked to clear, auditable outcomes.",75,,2025-10-12
-sub:2:2,"Simple, Fair Pricing","We set simple, fair pricing for a chosen segment, driving steady revenue and reinvestment.",75,,2025-10-12
-micro:2:2:1,"Document, Test, Converge Pricing","We document all pricing ideas, test rapidly, and converge on the clearest model.",75,,2025-10-12
-micro:2:2:2,Decide Primary Segment,We decide our primary customer segment before locking terms and packaging.,75,,2025-10-12
-micro:2:2:3,Deliberate Implementation,"We time implementation deliberately, with team iterations and explicit launch criteria.",75,,2025-10-12
-sub:2:3,"Banking, Tooling, & R&D","We invest in banking, tooling, and R&D that speed learning and compound customer value.",75,,2025-10-12
-micro:2:3:1,Gōdō Gaisha & Banking,We finalize gōdō gaisha setup and bank accounts to receive revenue.,75,,2025-10-12
-micro:2:3:2,One Operating System of Tools,We standardize one operating system of tools across work and life.,75,,2025-10-12
-micro:2:3:3,Budget Experiments & Travel,"We allocate budget to experiments, feature tests, and quarterly team travel.",75,,2025-10-12
-sub:3:1,Adaptive Challenge Tuning,"We compassionately tune actions, reps, and cadence to each person’s evolving capacity.",20,,2025-10-12
-micro:3:1:1,Define Segments; Refine Message,We define ideal segments and refine messaging until it resonates strongly.,0,,2025-10-12
-micro:3:1:2,Pricing Like a Gym,"We position pricing like a gym membership—visible gains, steady habit, clear return.",0,,2025-10-12
-micro:3:1:3,Publish Resonant Case Stories,"We publish case stories that reflect their goals, language, and context.",0,,2025-10-12
-sub:3:2,Celebrate Follow‑Through,"We celebrate self‑initiated follow‑through, scaling recognition to effort, difficulty, and impact.",20,,2025-10-12
-micro:3:2:1,Onboarding for Early Wins,We design onboarding that builds confidence quickly and celebrates early wins.,0,,2025-10-12
+title,,"Solution Keepers",,,
+mode,,"business",,,
+pillar_name:1,,"Team",,,
+pillar_name:2,,"Finance",,,
+pillar_name:3,,"Customer",,,
+core,"Thrive, Delight, Unite","We build a thriving business that...and unites our team in purposeful, creative work.",0,,2025-10-12
+pillar:1,"Safety, Clarity, Growth","We cultivate safety and clar...lling role, shows up present, and grows together.",0,,2025-10-12
+pillar:2,"Fair, Simple Economics","We design fair, simple econom...nds exciting salaries, travel, and reinvestment.",75,,2025-10-12
+pillar:3,"Align & Celebrate Outcomes","We align deeply with cust...and celebrating outcomes that change their lives.",0,,2025-10-12
+sub:1:1,"Psychological Safety Daily","We create psychological sa...presence, and honest feedback are everyday norms.",0,,2025-10-12
+micro:1:1:1,"Focused, Present Meetings","We keep meetings focuse...as on, and attention present for shared outcomes.",0,,2025-10-12
+micro:1:1:2,"Address Concerns Early","We address concerns early, kindly, and directly to protect trust.",0,,2025-10-12
+micro:1:1:3,"Visibility Without Pressure","We keep work visible without pressure; clarity beats urgency.",0,,2025-10-12
+sub:1:2,"Clear Roles & Cadence","We design clear roles, steady cadence, and smooth handoffs.",0,,2025-10-12
+micro:1:2:1,"Role Clarity & Agreements","We write simple role agreements and live by them.",0,,2025-10-12
+micro:1:2:2,"Weekly Planning Rhythm","We plan weekly with one short, focused check‑in.",0,,2025-10-12
+micro:1:2:3,"Demo the Work","We demo progress in small, real slices.",0,,2025-10-12
+sub:1:3,"Grow People, Not Just Output","We balance delivery with deliberate growth.",0,,2025-10-12
+micro:1:3:1,"Skill Ladders","We keep simple ladders for each role and grow up them.",0,,2025-10-12
+micro:1:3:2,"Mentor Moments","We pair for mentor moments weekly.",0,,2025-10-12
+micro:1:3:3,"Celebrate Learning","We celebrate useful experiments—even the messy ones.",0,,2025-10-12
+sub:2:1,"Simple, Fair Pricing","We keep pricing fair, simple, and trust‑building.",0,,2025-10-12
+micro:2:1:1,"Visible Value","We make outcomes and benefits easy to see.",0,,2025-10-12
+micro:2:1:2,"Easy Plans","We offer 1–3 plans that are easy to choose.",0,,2025-10-12
+micro:2:1:3,"No Surprise Fees","We avoid surprises; everything is upfront.",0,,2025-10-12
+sub:2:2,"Cash Clarity","We see cash clearly and decide calmly.",0,,2025-10-12
+micro:2:2:1,"Runway & Reserves","We track runway and keep sensible reserves.",0,,2025-10-12
+micro:2:2:2,"Cash‑In Rhythm","We keep a steady rhythm to collect cash in.",0,,2025-10-12
+micro:2:2:3,"Cash‑Out Rhythm","We pay on time and sleep well.",0,,2025-10-12
+sub:2:3,"Invest in What Works","We invest in what customers prove works.",0,,2025-10-12
+micro:2:3:1,"Double‑Down Signals","We double‑down where outcomes are strongest.",0,,2025-10-12
+micro:2:3:2,"Stop the Leaks","We stop work that leaks energy or money.",0,,2025-10-12
+micro:2:3:3,"Small Bets, Fast Learn","We place small bets; learn fast.",0,,2025-10-12
+sub:3:1,"Adaptive Challenge Tuning","We compassionately tune act... and cadence to each person’s evolving capacity.",20,,2025-10-12
+micro:3:1:1,"Define Segments; Refine Message","We define ideal s...and refine messaging until it resonates strongly.",0,,2025-10-12
+micro:3:1:2,"Pricing Like a Gym","We position pricing like a gym...ership—visible gains, steady habit, clear return.",0,,2025-10-12
+micro:3:1:3,"Publish Resonant Case Stories","We publish case sto... that reflect their goals, language, and context.",0,,2025-10-12
+sub:3:2,"Celebrate Follow‑Through","We celebrate self‑initiated ...g recognition to effort, difficulty, and impact.",20,,2025-10-12
+micro:3:2:1,"Onboarding for Early Wins","We design onboarding th...lds confidence quickly and celebrates early wins.",0,,2025-10-12
 micro:3:2:2,"Responsive, Human Support","We keep support responsive, kind, and human across every channel.",0,,2025-10-12
-micro:3:2:3,Close Feedback Loops,We close loops on feedback and show what changed and why.,0,,2025-10-12
-sub:3:3,Synchrony & Shared Rhythms,We build synchrony and care—shared rhythms that deepen connection and sustain commitment.,20,,2025-10-12
-micro:3:3:1,Invite Life‑Change Proof,We invite testimonials that highlight life change and practical results.,0,,2025-10-12
-micro:3:3:2,Share Milestones Publicly,We share milestones in community spaces and recognize customer contributions.,0,,2025-10-12
-micro:3:3:3,Thank Referrers Thoughtfully,We thank referrers with thoughtful notes and visible appreciation.,0,,2025-10-12
-lens:1,Weekly video calls,Weekly connection calls with video; presence across time zones.,75,1;3,2025-10-12
-lens:2,Monthly alignment,Monthly AIM/product alignment and deliverables review.,70,1;2,2025-10-12
-lens:3,Quarterly meetups,Quarterly in‑person meetup in Japan or Tunisia; visa‑savvy rendezvous.,65,1,2025-10-12
-lens:4,Belief-Led Project Fit,Your belief map keeps projects right-sized and aligned with life changes without breaking ties.,70,3,2025-10-13
-lens:5,Mutual Unlocks,My step unlocks yours; linked milestones help us finish together and celebrate along the way.,70,3,2025-10-13
-lens:6,Gentle Re-Entry Loop,"Early dip detection with soft options (lighter load, warm return, fresh start) to stay in motion.",70,3,2025-10-13
-lens:7,Community Lifeline,"Immediate, human support when you're stuck—shared strength on call.",70,3,2025-10-13
+micro:3:2:3,"Close Feedback Loops","We close loops on feedback and show what changed and why.",0,,2025-10-12
+sub:3:3,"Synchrony & Shared Rhythms","We build synchrony and car...s that deepen connection and sustain commitment.",20,,2025-10-12
+micro:3:3:1,"Invite Life‑Change Proof","We invite testimonials that highlight life change and practical results.",0,,2025-10-12
+micro:3:3:2,"Share Milestones Publicly","We share milestones in ...nity spaces and recognize customer contributions.",0,,2025-10-12
+micro:3:3:3,"Thank Referrers Thoughtfully","We thank referrers with thoughtful notes and visible appreciation.",0,,2025-10-12
+lens:1,"Weekly video calls","Weekly connection calls with video; presence across time zones.",75,1;3,2025-10-12
+lens:2,"Monthly alignment","Monthly AIM/product alignment and deliverables review.",70,1;2,2025-10-12
+lens:3,"Quarterly meetups","Quarterly in‑person meetup in Japan or Tunisia; visa‑savvy rendezvous.",65,1,2025-10-12
+lens:4,"Belief-Led Project Fit","Your belief map keeps projects right-sized and aligned with life changes without breaking ties.",70,3,2025-10-13
+lens:5,"Mutual Unlocks","My step unlocks yours; linked milestones help us finish together and celebrate along the way.",70,3,2025-10-13
+lens:6,"Gentle Re-Entry Loop","Early dip detection with soft options (lighter load, warm return, fresh start) to stay in motion.",70,3,2025-10-13
+lens:7,"Community Lifeline","Immediate, human support when you're stuck—shared strength on call.",70,3,2025-10-13
