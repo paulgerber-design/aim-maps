@@ -263,8 +263,7 @@
 
       <!-- Lenses block -->
       <div id="lensesBlock" style="margin-top:12px; max-width:200px;" aria-label="Lenses section">
-        <!-- Title will be updated dynamically (e.g. "Team lenses" when filtering) -->
-        <div id="lensesTitle" style="font-weight:600; margin-bottom:4px;">Lenses</div>
+        <div style="font-weight:600; margin-bottom:4px;">Lenses</div>
         <div id="lensesList" style="font-size:0.85rem; color:#333;">No lenses</div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" aria-label="CSV file input">
@@ -285,11 +284,27 @@
             <path d="M12 2v14m0 0l-5-5m5 5l5-5M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           </svg>
         </button>
+        <!-- Edit data button: pencil icon -->
+        <button id="editDataBtn" class="iconButton" aria-label="Edit data" title="Edit data">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+          </svg>
+        </button>
       </div>
+      <!-- Simple filter select to filter rows by pillar or lens. Populated dynamically -->
+      <select id="tableFilterSelect" style="margin-bottom:6px; padding:4px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px;">
+        <option value="all">All entries</option>
+      </select>
+
+      <!-- Note shown when editing is enabled -->
+      <div id="editNote" style="display:none; font-size:0.75rem; color:#666; margin-bottom:6px;">
+        Changes will only persist for this session. Download the CSV to save your edits.
+      </div>
+
       <input type="search" id="tableSearch" placeholder="Search title or belief…" aria-label="Search titles or beliefs">
       <table id="nodeTable">
         <thead>
-        <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Title</th><th>Belief</th><th>Alignment</th><th>Applies to</th></tr>
+        <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Title</th><th>Belief</th><th>Confidence</th><th>Last updated</th><th>Applies to</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -361,22 +376,16 @@
     }
 
     /**
-     * Formats a date string into "MMM DD, YYYY" (e.g. "Apr 10, 2025").  The
-     * input may be ISO (YYYY-MM-DD), slash-separated (YYYY/MM/DD) or a
-     * human-readable date.  If the date cannot be parsed, returns an empty
-     * string.  Leading zeros are removed from the day number.
-     * @param {string} dateStr Raw date string
+     * Formats a date/time string into 'MMM DD, YYYY' using US locale.  If the
+     * input cannot be parsed as a date, returns an empty string.
+     * @param {string} str ISO or other date/time string
      * @returns {string} Formatted date or empty string
      */
-    function formatDate(dateStr) {
-      if (!dateStr || typeof dateStr !== 'string') return '';
-      const date = new Date(dateStr);
+    function formatDateString(str) {
+      if (!str) return '';
+      const date = new Date(str);
       if (isNaN(date)) return '';
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const month = months[date.getMonth()];
-      const day = date.getDate();
-      const year = date.getFullYear();
-      return `${month} ${day}, ${year}`;
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
     // Data model for the current AIM dataset
     let aimData = null;
@@ -487,6 +496,12 @@
     const tableSearchInput = document.getElementById('tableSearch');
     const editTitleInput = document.getElementById('editTitleInput');
     const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+  const editDataBtn = document.getElementById('editDataBtn');
+  const editNote = document.getElementById('editNote');
+  // Flag to indicate whether editing mode is enabled.  When true, table
+  // cells become editable and the Applies column uses a multi‑select for
+  // lenses.  Edits persist only during the current session.
+  let editingEnabled = false;
 
     // Confidence heatmap toggle
     const confidenceToggle = document.getElementById('confidenceToggle');
@@ -515,6 +530,34 @@
     tableSearchInput.addEventListener('input', () => {
       filterTable(tableSearchInput.value.trim().toLowerCase());
     });
+
+    // Toggle editing mode when the edit button is clicked.  Editing is
+    // session‑only; changes are not saved back to the CSV unless the user
+    // downloads the file.  Display a note when editing is enabled.
+    if (editDataBtn) {
+      editDataBtn.addEventListener('click', () => {
+        editingEnabled = !editingEnabled;
+        // Indicate active state on the button by changing background
+        if (editingEnabled) {
+          editDataBtn.style.backgroundColor = '#e6f5ff';
+        } else {
+          editDataBtn.style.backgroundColor = '';
+        }
+        if (editNote) {
+          editNote.style.display = editingEnabled ? 'block' : 'none';
+        }
+        // Rebuild the table to apply or remove editable fields
+        buildTableView();
+      });
+    }
+
+    // Filter select change handler: apply filter and search together
+    const filterSelect = document.getElementById('tableFilterSelect');
+    if (filterSelect) {
+      filterSelect.addEventListener('change', () => {
+        filterTable(tableSearchInput.value.trim().toLowerCase());
+      });
+    }
 
     // Update the map title when edited in the table overlay
     if (editTitleInput) {
@@ -723,6 +766,8 @@ micro:3:3:3,Follow-up closes the loop`;
         if (!row.label) return;
         const label = String(row.label).trim().toLowerCase();
         const title = row.title !== undefined ? String(row.title).trim() : '';
+        // Optional last updated date/time field.  Store as raw string for later formatting.
+        const updated = row.updated !== undefined ? String(row.updated).trim() : '';
         const belief = row.belief !== undefined ? String(row.belief).trim() : '';
         // Parse optional confidence column (0-100).  Default to 50 if missing or invalid
         let confidence = 50;
@@ -732,8 +777,6 @@ micro:3:3:3,Follow-up closes the loop`;
             confidence = Math.max(0, Math.min(100, num));
           }
         }
-        // Parse optional updated timestamp.  Store as a string for later formatting.  Empty if not provided.
-        const updated = row.updated !== undefined ? String(row.updated).trim() : '';
         if (label === 'title') {
           data.title = belief;
           return;
@@ -806,7 +849,7 @@ micro:3:3:3,Follow-up closes the loop`;
                 }
               });
             }
-            data.lenses.push({ title: title || '', belief: belief, confidence: confidence, pillars: pillarsList, updated: updated });
+          data.lenses.push({ title: title || '', belief: belief, confidence: confidence, pillars: pillarsList, updated: updated });
           }
           return;
         }
@@ -816,15 +859,15 @@ micro:3:3:3,Follow-up closes the loop`;
         ? ['Outer Self','Inner Self','Relationships']
         : ['Team','Revenue','Customer'];
       for (let i = 1; i <= 3; i++) {
-        if (!data.pillars[i]) data.pillars[i] = { title:'', belief: '', confidence: 50, updated: '' };
+        if (!data.pillars[i]) data.pillars[i] = { title:'', belief: '', confidence: 50 };
         if (!data.pillarNames[i]) data.pillarNames[i] = defaultNames[i - 1];
         if (!data.subs[i]) data.subs[i] = {};
         if (!data.micros[i]) data.micros[i] = {};
         for (let j = 1; j <= 3; j++) {
-          if (!data.subs[i][j]) data.subs[i][j] = { title:'', belief: '', confidence: 50, updated: '' };
+          if (!data.subs[i][j]) data.subs[i][j] = { title:'', belief: '', confidence: 50 };
           if (!data.micros[i][j]) data.micros[i][j] = {};
           for (let k = 1; k <= 3; k++) {
-            if (!data.micros[i][j][k]) data.micros[i][j][k] = { title:'', belief: '', confidence: 50, updated: '' };
+            if (!data.micros[i][j][k]) data.micros[i][j][k] = { title:'', belief: '', confidence: 50 };
           }
         }
       }
@@ -971,29 +1014,14 @@ micro:3:3:3,Follow-up closes the loop`;
      */
     function updateLenses() {
       const listEl = document.getElementById('lensesList');
-      const titleEl = document.getElementById('lensesTitle');
       if (!listEl) return;
-      // Determine the set of lenses to display based on current pillar selection
-      let lenses = aimData && Array.isArray(aimData.lenses) ? aimData.lenses.slice() : [];
-      let titlePrefix = '';
-      // If in pillar or sub focus, filter to lenses that apply to the selected pillar
-      if ((currentState === 'B' || currentState === 'C') && selectedPillar && Array.isArray(lenses)) {
-        lenses = lenses.filter(l => Array.isArray(l.pillars) && l.pillars.includes(selectedPillar));
-        const pName = aimData && aimData.pillarNames ? aimData.pillarNames[selectedPillar] : '';
-        titlePrefix = pName ? `${pName} ` : '';
-      }
-      // Update the lenses section title
-      if (titleEl) {
-        const titleText = titlePrefix ? `${titlePrefix}Lenses` : 'Lenses';
-        titleEl.textContent = titleText;
-      }
-      if (!lenses || lenses.length === 0) {
+      if (!aimData || !aimData.lenses || aimData.lenses.length === 0) {
         listEl.textContent = 'No lenses';
       } else {
-        // Clear existing list
+        // Clear existing
         listEl.innerHTML = '';
         // Sort lenses by confidence descending and take top 5
-        const sorted = lenses.sort((a, b) => {
+        const sorted = aimData.lenses.slice().sort((a, b) => {
           const ca = (typeof a.confidence === 'number') ? a.confidence : 50;
           const cb = (typeof b.confidence === 'number') ? b.confidence : 50;
           return cb - ca;
@@ -1016,23 +1044,25 @@ micro:3:3:3,Follow-up closes the loop`;
             const heat = computeHeatColor((typeof lens.confidence === 'number') ? lens.confidence : 50);
             color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
           } else {
+            // neutral grey dot when confidence heatmap is off
             color = '#888888';
           }
           dot.style.backgroundColor = color;
           container.appendChild(dot);
-          // Lens title or truncated belief text for display
+          // Lens text (truncate long lenses for display).  Add title attribute to show full text on hover.
           const textSpan = document.createElement('span');
+          // Use lens.title if provided, else fall back to the full belief for display
           const baseText = (lens.title && lens.title.length > 0) ? lens.title.trim() : (typeof lens.belief === 'string' ? lens.belief.trim() : '');
           const displayText = baseText.length > 50 ? baseText.slice(0, 47).trim() + '…' : baseText;
           textSpan.textContent = displayText;
           textSpan.style.flex = '1';
           textSpan.style.fontSize = '0.85rem';
           textSpan.style.color = '#333';
-          // Full text in title attribute for native tooltip
+          // Use title attribute to show full belief text on hover
           const fullLensText = (typeof lens.belief === 'string') ? lens.belief.trim() : '';
           textSpan.setAttribute('title', fullLensText);
           container.appendChild(textSpan);
-          // Attachment squares for associated pillars (always base colours)
+          // Append small coloured squares for pillar attachments
           if (Array.isArray(lens.pillars) && lens.pillars.length > 0) {
             const attachContainer = document.createElement('span');
             attachContainer.style.display = 'flex';
@@ -1044,20 +1074,25 @@ micro:3:3:3,Follow-up closes the loop`;
               sq.style.height = '8px';
               sq.style.borderRadius = '2px';
               const rgb = pillarBases[pillarIdx - 1] || [136,136,136];
-              const attachColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+              // Use the same pastel colour as the legend (depth 1 alpha) so these
+              // squares match the chart and legend.  We specify an rgba value
+              // using the depthAlpha for pillars (0.25).  On a white
+              // background this produces the same washed‑out tint used in
+              // the legend and outer arcs.
+              const attachColor = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${depthAlpha[1]})`;
               sq.style.backgroundColor = attachColor;
               attachContainer.appendChild(sq);
             });
             container.appendChild(attachContainer);
           }
-          // Add tooltip events for lens
+          // Add custom tooltip events for lenses.  We reuse showTooltip/hideTooltip
           container.addEventListener('mouseenter', (e) => {
             showTooltip(e, lens);
           });
           container.addEventListener('mousemove', (e) => {
             moveTooltip(e);
           });
-          container.addEventListener('mouseleave', () => {
+          container.addEventListener('mouseleave', (e) => {
             hideTooltip();
           });
           listEl.appendChild(container);
@@ -1116,8 +1151,6 @@ micro:3:3:3,Follow-up closes the loop`;
       currentState = 'B';
       updateChart();
       updateLegend();
-      // Update the lenses list when switching pillars via the legend
-      updateLenses();
       // Flash the sub ring to indicate navigation
       setTimeout(() => flashRing(currentRingRadii.B.subStart, currentRingRadii.B.subEnd), 0);
     }
@@ -1203,9 +1236,11 @@ micro:3:3:3,Follow-up closes the loop`;
     const bRatios = [0.55, 0.35, 0.10];
       // Sub focus (C): centre (sub) and micro ring (three micros)
     // Sub focus: emphasise the selected sub while leaving space for its three
-    // micros.  Allocate 75% of the radius to the centre and the remaining
-    // 25% to the micro ring.
-    const cRatios = [0.75, 0.25];
+    // micros.  In the spec we initially allocated 75% of the radius to the
+    // centre and 25% to the micro ring.  Users requested more room for the
+    // micro ring to avoid label overlap, so shrink the centre to 60% and
+    // allocate 40% to the micro ring.
+    const cRatios = [0.60, 0.40];
       const gap = 2; // small gap between rings
       // Compute radii for global state
       let cumulative = 0;
@@ -1668,14 +1703,22 @@ micro:3:3:3,Follow-up closes the loop`;
             .text(line);
         });
       } else if (currentState === 'C' && selectedPillar && selectedSub) {
-        // Sub focus: show the truncated sub belief only (no label).
+        // Sub focus: show the sub title (if provided) and the truncated sub
+        // belief underneath.  The title appears on the first line in bold.
         const radii = currentRingRadii.C;
         const textGroup = g.append('g').attr('pointer-events','none');
-        // Always use the sub belief (not title)
+        // Title from the CSV (short label) if present
+        const subTitle = aimData.subs[selectedPillar][selectedSub].title || '';
+        // Use the sub belief for the body text
         const subBelief = aimData.subs[selectedPillar][selectedSub].belief || '';
         const truncated = truncateText(subBelief, centerBeliefMaxChars);
         const wrapLen = Math.max(8, Math.floor(radii.center / 8));
-        const lines = wrapLines(truncated, wrapLen);
+        const beliefLines = wrapLines(truncated, wrapLen);
+        // Build an array combining title (if non‑empty) and belief lines
+        const lines = [];
+        if (subTitle) lines.push(subTitle);
+        beliefLines.forEach(line => lines.push(line));
+        // Compute font size relative to radius and number of lines
         const fontSize = Math.min(radii.center / (lines.length + 1), 18);
         const textEl = textGroup.append('text')
           .attr('text-anchor','middle')
@@ -1686,7 +1729,7 @@ micro:3:3:3,Follow-up closes the loop`;
           textEl.append('tspan')
             .attr('x', 0)
             .attr('dy', i === 0 ? -(lines.length - 1) / 2 * (fontSize + 2) : (fontSize + 2))
-            .style('font-weight','400')
+            .style('font-weight', i === 0 && subTitle ? '700' : '400')
             .text(line);
         });
       }
@@ -1758,8 +1801,6 @@ micro:3:3:3,Follow-up closes the loop`;
           currentState = 'B';
           updateChart();
           updateLegend();
-          // Also refresh the lenses list when switching pillars
-          updateLenses();
           // Flash sub ring
           setTimeout(() => flashRing(currentRingRadii.B.subStart, currentRingRadii.B.subEnd), 0);
         } else if (d.depth === 2) {
@@ -1770,8 +1811,6 @@ micro:3:3:3,Follow-up closes the loop`;
           currentState = 'B';
           updateChart();
           updateLegend();
-          // Also refresh the lenses list when switching pillars via a sub click
-          updateLenses();
           // Flash sub ring
           setTimeout(() => flashRing(currentRingRadii.B.subStart, currentRingRadii.B.subEnd), 0);
         }
@@ -1784,8 +1823,6 @@ micro:3:3:3,Follow-up closes the loop`;
             preselectedSub = null;
             updateChart();
             updateLegend();
-            // Refresh lenses list when drilling down into a sub
-            updateLenses();
             // Flash micro ring in sub focus
             setTimeout(() => flashRing(currentRingRadii.C.microStart, currentRingRadii.C.microEnd), 0);
           } else {
@@ -1795,8 +1832,6 @@ micro:3:3:3,Follow-up closes the loop`;
             currentState = 'C';
             updateChart();
             updateLegend();
-            // Refresh lenses list when drilling down into a sub
-            updateLenses();
             setTimeout(() => flashRing(currentRingRadii.C.microStart, currentRingRadii.C.microEnd), 0);
           }
         }
@@ -1919,15 +1954,13 @@ micro:3:3:3,Follow-up closes the loop`;
         // Alignment (confidence) line (if available)
         if (typeof d.confidence === 'number') {
           const alignLabel = getAlignmentLabel(d.confidence);
-          // Include numeric value for transparency
-          const confVal = Math.round(d.confidence);
-          html += `<div style="font-size:12px; color:#777;">Alignment: ${alignLabel} (${confVal}%)</div>`;
+          html += `<div style="font-size:12px; color:#777;">Alignment: ${alignLabel} (${d.confidence}%)</div>`;
         }
-        // Last updated date line if provided
-        if (d.updated && d.updated.trim()) {
-          const formattedDate = formatDate(d.updated);
-          if (formattedDate) {
-            html += `<div style="font-size:11px; color:#999;">Last updated: ${formattedDate}</div>`;
+        // Last updated date if available
+        if (d.updated) {
+          const upd = formatDateString(d.updated);
+          if (upd) {
+            html += `<div style="font-size:11px; color:#777;">Last updated: ${upd}</div>`;
           }
         }
       } else {
@@ -1974,27 +2007,26 @@ micro:3:3:3,Follow-up closes the loop`;
           // include an arrow to visually indicate support relationship
           html += `<div style="font-size:14px; color:#555;">↳ <strong>${parentLabel}:</strong> ${parentText}</div>`;
         }
-        // Append alignment and last updated at the bottom
+        // Append alignment at the bottom
         if (typeof confValue === 'number') {
           const alignLabel = getAlignmentLabel(confValue);
-          const confVal = Math.round(confValue);
-          html += `<div style="font-size:12px; color:#777; margin-top:2px;">Alignment: ${alignLabel} (${confVal}%)</div>`;
+          html += `<div style="font-size:12px; color:#777; margin-top:2px;">Alignment: ${alignLabel} (${confValue}%)</div>`;
         }
-        // Determine last updated date for the current node
-        let updatedStr = '';
+        // Append last updated date if available
+        let updStr = '';
         if (d.micro) {
-          updatedStr = aimData.micros[d.pillar][d.sub][d.micro].updated || '';
+          updStr = aimData.micros[d.pillar][d.sub][d.micro].updated || '';
         } else if (d.sub) {
-          updatedStr = aimData.subs[d.pillar][d.sub].updated || '';
+          updStr = aimData.subs[d.pillar][d.sub].updated || '';
         } else if (d.pillar) {
-          updatedStr = aimData.pillars[d.pillar].updated || '';
+          updStr = aimData.pillars[d.pillar].updated || '';
         } else {
-          updatedStr = aimData.core.updated || '';
+          updStr = aimData.core.updated || '';
         }
-        if (updatedStr && updatedStr.trim()) {
-          const formattedDate = formatDate(updatedStr);
-          if (formattedDate) {
-            html += `<div style="font-size:11px; color:#999;">Last updated: ${formattedDate}</div>`;
+        if (updStr) {
+          const updFmt = formatDateString(updStr);
+          if (updFmt) {
+            html += `<div style="font-size:11px; color:#777;">Last updated: ${updFmt}</div>`;
           }
         }
       }
@@ -2084,16 +2116,16 @@ micro:3:3:3,Follow-up closes the loop`;
       // Flatten nodes into an array for the table
       const rows = [];
       // Core
-      rows.push({ depth: 0, pillar: '', sub: '', micro: '', label: 'Core', title: aimData.core.title || '', belief: aimData.core.belief || '', confidence: aimData.core.confidence || 50 });
+      rows.push({ depth: 0, pillar: '', sub: '', micro: '', label: 'Core', title: aimData.core.title || '', belief: aimData.core.belief || '', confidence: aimData.core.confidence || 50, updated: aimData.core.updated || '' });
       for (let p = 1; p <= 3; p++) {
         // Pillar with confidence
-        rows.push({ depth: 1, pillar: p, sub: '', micro: '', label: aimData.pillarNames[p] || '', title: aimData.pillars[p].title || '', belief: aimData.pillars[p].belief || '', confidence: aimData.pillars[p].confidence || 50 });
+        rows.push({ depth: 1, pillar: p, sub: '', micro: '', label: aimData.pillarNames[p] || '', title: aimData.pillars[p].title || '', belief: aimData.pillars[p].belief || '', confidence: aimData.pillars[p].confidence || 50, updated: aimData.pillars[p].updated || '' });
         for (let s = 1; s <= 3; s++) {
           // Sub with confidence
-          rows.push({ depth: 2, pillar: p, sub: s, micro: '', label: '', title: aimData.subs[p][s].title || '', belief: aimData.subs[p][s].belief || '', confidence: aimData.subs[p][s].confidence || 50 });
+          rows.push({ depth: 2, pillar: p, sub: s, micro: '', label: '', title: aimData.subs[p][s].title || '', belief: aimData.subs[p][s].belief || '', confidence: aimData.subs[p][s].confidence || 50, updated: aimData.subs[p][s].updated || '' });
           for (let m = 1; m <= 3; m++) {
             // Micro with confidence
-            rows.push({ depth: 3, pillar: p, sub: s, micro: m, label: '', title: aimData.micros[p][s][m].title || '', belief: aimData.micros[p][s][m].belief || '', confidence: aimData.micros[p][s][m].confidence || 50 });
+            rows.push({ depth: 3, pillar: p, sub: s, micro: m, label: '', title: aimData.micros[p][s][m].title || '', belief: aimData.micros[p][s][m].belief || '', confidence: aimData.micros[p][s][m].confidence || 50, updated: aimData.micros[p][s][m].updated || '' });
           }
         }
       }
@@ -2105,7 +2137,7 @@ micro:3:3:3,Follow-up closes the loop`;
           const names = Array.isArray(lensObj.pillars)
             ? lensObj.pillars.map(p => aimData.pillarNames[p] || '').filter(Boolean)
             : [];
-          rows.push({ depth: 4, pillar: '', sub: '', micro: '', label: `Lens ${idx + 1}`, title: lensObj.title || '', belief: lensObj.belief || '', confidence: lensObj.confidence !== undefined ? lensObj.confidence : '', applies: names.join(', ') });
+          rows.push({ depth: 4, pillar: '', sub: '', micro: '', label: `Lens ${idx + 1}`, title: lensObj.title || '', belief: lensObj.belief || '', confidence: lensObj.confidence !== undefined ? lensObj.confidence : '', updated: lensObj.updated || '', applies: names.join(', '), lensIndex: idx });
         });
       }
       // Sort by depth then pillar/sub/micro so that lens rows appear last
@@ -2116,30 +2148,200 @@ micro:3:3:3,Follow-up closes the loop`;
         if (a.micro !== b.micro) return (a.micro || 0) - (b.micro || 0);
         return 0;
       });
-      // Populate table body with eight columns (last column shows pillar names for lenses)
+      // Populate table body with nine columns: Depth, Pillar, Sub, Micro, Title, Belief, Confidence, Last updated, Applies to
       tableBody.innerHTML = '';
+      // Build filter options: gather unique pillar names and lens titles
+      const filterSelect = document.getElementById('tableFilterSelect');
+      if (filterSelect) {
+        // Clear existing options except the first (All entries)
+        while (filterSelect.options.length > 1) filterSelect.remove(1);
+      }
+      const filterValues = new Set();
       rows.forEach(r => {
-        const depthCell = (r.depth === 4 ? 'Lens' : r.depth);
-        const appliesText = (r.applies !== undefined ? r.applies : '');
-        // Compute alignment label from confidence if numeric
+        // Determine display names for depth and indices
+        let displayDepth = '';
+        switch (r.depth) {
+          case 0: displayDepth = 'Core'; break;
+          case 1: displayDepth = 'Pillar'; break;
+          case 2: displayDepth = 'Sub'; break;
+          case 3: displayDepth = 'Micro'; break;
+          case 4: displayDepth = 'Lens'; break;
+          default: displayDepth = r.depth;
+        }
+        // Pillar name or empty
+        let displayPillar = '';
+        if (r.depth !== 4 && r.pillar) {
+          displayPillar = aimData.pillarNames[r.pillar] || '';
+          filterValues.add(displayPillar);
+        }
+        // Sub title if available
+        let displaySub = '';
+        if (r.depth === 2 || r.depth === 3) {
+          if (r.pillar && r.sub) {
+            const obj = aimData.subs[r.pillar] && aimData.subs[r.pillar][r.sub];
+            if (obj && obj.title) displaySub = obj.title;
+          }
+        }
+        // Micro title if available
+        let displayMicro = '';
+        if (r.depth === 3) {
+          if (r.pillar && r.sub && r.micro) {
+            const obj = aimData.micros[r.pillar] && aimData.micros[r.pillar][r.sub] && aimData.micros[r.pillar][r.sub][r.micro];
+            if (obj && obj.title) displayMicro = obj.title;
+          }
+        }
+        // Compute alignment label (category) from confidence if numeric
         let alignCell = '';
         if (typeof r.confidence === 'number' && !isNaN(r.confidence)) {
           alignCell = getAlignmentLabel(r.confidence);
         } else if (r.confidence !== undefined && r.confidence !== '') {
-          // If alignment stored as string, keep it
           alignCell = r.confidence;
         }
+        // Format updated date
+        let updatedCell = '';
+        if (r.updated) {
+          updatedCell = formatDateString(r.updated) || '';
+        }
+        // Applies text
+        const appliesText = (r.applies !== undefined ? r.applies : '');
+        // Build row
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${depthCell}</td>` +
-          `<td>${r.pillar || ''}</td>` +
-          `<td>${r.sub || ''}</td>` +
-          `<td>${r.micro || ''}</td>` +
+        // Attach dataset attributes for filtering
+        tr.dataset.depth = displayDepth;
+        tr.dataset.pillar = displayPillar;
+        tr.dataset.lensTitle = (r.depth === 4 ? (r.title || '') : '');
+        tr.dataset.applies = appliesText;
+        if (r.depth === 4 && r.lensIndex !== undefined) {
+          tr.dataset.lensIndex = r.lensIndex;
+        }
+        // Populate row with cells
+        tr.innerHTML = `<td>${displayDepth}</td>` +
+          `<td>${displayPillar}</td>` +
+          `<td>${displaySub}</td>` +
+          `<td>${displayMicro}</td>` +
           `<td>${r.title !== undefined ? r.title : ''}</td>` +
           `<td>${r.belief}</td>` +
-          `<td>${alignCell}</td>` +
+          `<td>${editingEnabled ? ((typeof r.confidence === 'number' && !isNaN(r.confidence)) ? r.confidence : '') : alignCell}</td>` +
+          `<td>${updatedCell}</td>` +
           `<td>${appliesText}</td>`;
+        // If editing is enabled, make certain cells editable and provide controls
+        if (editingEnabled) {
+          const cells = tr.children;
+          // Title cell (index 4)
+          const titleTd = cells[4];
+          titleTd.contentEditable = true;
+          titleTd.style.backgroundColor = '#fff8e1';
+          titleTd.addEventListener('blur', () => {
+            const newVal = titleTd.textContent.trim();
+            if (r.depth === 4) {
+              aimData.lenses[r.lensIndex].title = newVal;
+            } else if (r.depth === 0) {
+              aimData.core.title = newVal;
+            } else if (r.depth === 1) {
+              aimData.pillars[r.pillar].title = newVal;
+            } else if (r.depth === 2) {
+              aimData.subs[r.pillar][r.sub].title = newVal;
+            } else if (r.depth === 3) {
+              aimData.micros[r.pillar][r.sub][r.micro].title = newVal;
+            }
+            buildTableView();
+            updateChart();
+            updateLegend();
+            updateLenses();
+          });
+          // Belief cell (index 5)
+          const beliefTd = cells[5];
+          beliefTd.contentEditable = true;
+          beliefTd.style.backgroundColor = '#fff8e1';
+          beliefTd.addEventListener('blur', () => {
+            const newVal = beliefTd.textContent.trim();
+            if (r.depth === 4) {
+              aimData.lenses[r.lensIndex].belief = newVal;
+            } else if (r.depth === 0) {
+              aimData.core.belief = newVal;
+            } else if (r.depth === 1) {
+              aimData.pillars[r.pillar].belief = newVal;
+            } else if (r.depth === 2) {
+              aimData.subs[r.pillar][r.sub].belief = newVal;
+            } else if (r.depth === 3) {
+              aimData.micros[r.pillar][r.sub][r.micro].belief = newVal;
+            }
+            updateChart();
+            updateLegend();
+            updateLenses();
+          });
+          // Confidence cell (index 6)
+          const confTd = cells[6];
+          confTd.contentEditable = true;
+          confTd.style.backgroundColor = '#fff8e1';
+          confTd.addEventListener('blur', () => {
+            const val = confTd.textContent.trim();
+            const num = parseFloat(val);
+            if (!isNaN(num) && num >= 0 && num <= 100) {
+              if (r.depth === 4) {
+                aimData.lenses[r.lensIndex].confidence = num;
+              } else if (r.depth === 0) {
+                aimData.core.confidence = num;
+              } else if (r.depth === 1) {
+                aimData.pillars[r.pillar].confidence = num;
+              } else if (r.depth === 2) {
+                aimData.subs[r.pillar][r.sub].confidence = num;
+              } else if (r.depth === 3) {
+                aimData.micros[r.pillar][r.sub][r.micro].confidence = num;
+              }
+            }
+            buildTableView();
+            updateChart();
+            updateLegend();
+            updateLenses();
+          });
+          // Applies cell (index 8) for lens rows: multi-select input
+          const appliesTdEdit = cells[8];
+          if (r.depth === 4) {
+            appliesTdEdit.innerHTML = '';
+            const select = document.createElement('select');
+            select.multiple = true;
+            select.style.minWidth = '80px';
+            select.style.fontSize = '0.85rem';
+            for (let i = 1; i <= 3; i++) {
+              const opt = document.createElement('option');
+              opt.value = String(i);
+              opt.textContent = aimData.pillarNames[i] || ('Pillar ' + i);
+              if (Array.isArray(aimData.lenses[r.lensIndex].pillars) && aimData.lenses[r.lensIndex].pillars.includes(i)) {
+                opt.selected = true;
+              }
+              select.appendChild(opt);
+            }
+            select.addEventListener('change', () => {
+              const selected = Array.from(select.selectedOptions).map(o => parseInt(o.value));
+              aimData.lenses[r.lensIndex].pillars = selected;
+              r.applies = selected.map(p => aimData.pillarNames[p] || '').join(', ');
+              tr.dataset.applies = r.applies;
+              appliesTdEdit.textContent = r.applies;
+              updateLenses();
+            });
+            appliesTdEdit.appendChild(select);
+          }
+        }
         tableBody.appendChild(tr);
       });
+      // Populate filter select options after building rows
+      if (filterSelect) {
+        // Add pillar options
+        filterValues.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = 'pillar:' + name;
+          opt.textContent = name;
+          filterSelect.appendChild(opt);
+        });
+        // Add single option to show all lens rows
+        if (aimData.lenses && aimData.lenses.length > 0) {
+          const lensOpt = document.createElement('option');
+          lensOpt.value = 'lens';
+          lensOpt.textContent = 'Lenses';
+          filterSelect.appendChild(lensOpt);
+        }
+      }
     }
 
     /**
@@ -2148,11 +2350,44 @@ micro:3:3:3,Follow-up closes the loop`;
      */
     function filterTable(search) {
       const trs = tableBody.querySelectorAll('tr');
+      const filterSelect = document.getElementById('tableFilterSelect');
+      const filterVal = filterSelect ? filterSelect.value : 'all';
       trs.forEach(tr => {
         // search both title and belief columns (indexes 4 and 5)
         const title = tr.children[4] ? tr.children[4].textContent.toLowerCase() : '';
         const belief = tr.children[5] ? tr.children[5].textContent.toLowerCase() : '';
-        if (!search || title.indexOf(search) !== -1 || belief.indexOf(search) !== -1) {
+        // search condition
+        let searchOk = true;
+        if (search && search.length > 0) {
+          searchOk = (title.indexOf(search) !== -1 || belief.indexOf(search) !== -1);
+        }
+        // filter condition
+        let filterOk = true;
+        if (filterVal && filterVal !== 'all') {
+          if (filterVal.startsWith('pillar:')) {
+            const name = filterVal.slice(7);
+            const rowPillar = tr.dataset.pillar || '';
+            const rowApplies = tr.dataset.applies || '';
+            // Show if row pillar matches or row is a lens with applies containing name
+            if (rowPillar !== name) {
+              // not same pillar; check if lens applies to pillar
+              if (!tr.dataset.depth || tr.dataset.depth !== 'Lens' || rowApplies.indexOf(name) === -1) {
+                filterOk = false;
+              }
+            }
+          } else if (filterVal === 'lens') {
+            // Show only lens rows when 'Lenses' filter selected
+            if (!tr.dataset.depth || tr.dataset.depth !== 'Lens') {
+              filterOk = false;
+            }
+          } else if (filterVal.startsWith('lens:')) {
+            // Legacy support: treat lens:Title same as lens filter
+            if (!tr.dataset.depth || tr.dataset.depth !== 'Lens') {
+              filterOk = false;
+            }
+          }
+        }
+        if (searchOk && filterOk) {
           tr.style.display = '';
         } else {
           tr.style.display = 'none';
