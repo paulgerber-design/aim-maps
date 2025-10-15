@@ -263,7 +263,11 @@
 
       <!-- Lenses block -->
       <div id="lensesBlock" style="margin-top:12px; max-width:200px;" aria-label="Lenses section">
-        <div style="font-weight:600; margin-bottom:4px;">Lenses</div>
+        <!-- Dynamic heading for the lenses list.  Includes an info icon with a definition on hover.  -->
+        <div style="display:flex; align-items:center; gap:4px; font-weight:600; margin-bottom:4px;">
+          <span id="lensesTitle">Lenses</span>
+          <span id="lensesInfo" title="Lenses are short guiding statements or perspectives that support your beliefs. Each lens can apply to one or more pillars." style="display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; border:1px solid #999; font-size:10px; cursor:default; line-height:14px;">i</span>
+        </div>
         <div id="lensesList" style="font-size:0.85rem; color:#333;">No lenses</div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" aria-label="CSV file input">
@@ -342,6 +346,11 @@
     // appear in the centre.  Increase the limit to show more of the
     // underlying belief text while still fitting within the available space.
     const centerBeliefMaxChars = 120;
+
+    // Additional gap between lines in the centre text.  Increasing this
+    // value adds more space between the title and the belief text for better
+    // readability.  Used by drawCenterText to separate lines vertically.
+    const centerLineGap = 4;
     // Base RGB colours for the three pillars
     const pillarBases = [
       [42, 161, 152],    // teal
@@ -1014,90 +1023,103 @@ micro:3:3:3,Follow-up closes the loop`;
      */
     function updateLenses() {
       const listEl = document.getElementById('lensesList');
-      if (!listEl) return;
-      if (!aimData || !aimData.lenses || aimData.lenses.length === 0) {
-        listEl.textContent = 'No lenses';
-      } else {
-        // Clear existing
-        listEl.innerHTML = '';
-        // Sort lenses by confidence descending and take top 5
-        const sorted = aimData.lenses.slice().sort((a, b) => {
-          const ca = (typeof a.confidence === 'number') ? a.confidence : 50;
-          const cb = (typeof b.confidence === 'number') ? b.confidence : 50;
-          return cb - ca;
-        });
-        const topLenses = sorted.slice(0, 5);
-        topLenses.forEach(lens => {
-          const container = document.createElement('div');
-          container.style.display = 'flex';
-          container.style.alignItems = 'center';
-          container.style.gap = '6px';
-          container.style.cursor = 'default';
-          // Confidence dot: colour depends on heatmap state
-          const dot = document.createElement('span');
-          dot.style.display = 'inline-block';
-          dot.style.width = '10px';
-          dot.style.height = '10px';
-          dot.style.borderRadius = '50%';
-          let color;
-          if (showConfidence) {
-            const heat = computeHeatColor((typeof lens.confidence === 'number') ? lens.confidence : 50);
-            color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
-          } else {
-            // neutral grey dot when confidence heatmap is off
-            color = '#888888';
-          }
-          dot.style.backgroundColor = color;
-          container.appendChild(dot);
-          // Lens text (truncate long lenses for display).  Add title attribute to show full text on hover.
-          const textSpan = document.createElement('span');
-          // Use lens.title if provided, else fall back to the full belief for display
-          const baseText = (lens.title && lens.title.length > 0) ? lens.title.trim() : (typeof lens.belief === 'string' ? lens.belief.trim() : '');
-          const displayText = baseText.length > 50 ? baseText.slice(0, 47).trim() + '…' : baseText;
-          textSpan.textContent = displayText;
-          textSpan.style.flex = '1';
-          textSpan.style.fontSize = '0.85rem';
-          textSpan.style.color = '#333';
-          // Use title attribute to show full belief text on hover
-          const fullLensText = (typeof lens.belief === 'string') ? lens.belief.trim() : '';
-          textSpan.setAttribute('title', fullLensText);
-          container.appendChild(textSpan);
-          // Append small coloured squares for pillar attachments
-          if (Array.isArray(lens.pillars) && lens.pillars.length > 0) {
-            const attachContainer = document.createElement('span');
-            attachContainer.style.display = 'flex';
-            attachContainer.style.gap = '3px';
-            lens.pillars.forEach(pillarIdx => {
-              const sq = document.createElement('span');
-              sq.style.display = 'inline-block';
-              sq.style.width = '8px';
-              sq.style.height = '8px';
-              sq.style.borderRadius = '2px';
-              const rgb = pillarBases[pillarIdx - 1] || [136,136,136];
-              // Use the same pastel colour as the legend (depth 1 alpha) so these
-              // squares match the chart and legend.  We specify an rgba value
-              // using the depthAlpha for pillars (0.25).  On a white
-              // background this produces the same washed‑out tint used in
-              // the legend and outer arcs.
-              const attachColor = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${depthAlpha[1]})`;
-              sq.style.backgroundColor = attachColor;
-              attachContainer.appendChild(sq);
-            });
-            container.appendChild(attachContainer);
-          }
-          // Add custom tooltip events for lenses.  We reuse showTooltip/hideTooltip
-          container.addEventListener('mouseenter', (e) => {
-            showTooltip(e, lens);
-          });
-          container.addEventListener('mousemove', (e) => {
-            moveTooltip(e);
-          });
-          container.addEventListener('mouseleave', (e) => {
-            hideTooltip();
-          });
-          listEl.appendChild(container);
-        });
+      const titleEl = document.getElementById('lensesTitle');
+      if (!listEl || !titleEl) return;
+      // Determine if we should filter lenses by the selected pillar.  In global state (A),
+      // we show all lenses.  In pillar (B) or sub focus (C) we show only
+      // lenses whose pillars list includes the current selectedPillar.
+      let lensesToShow = [];
+      let heading = 'Lenses';
+      if (aimData && Array.isArray(aimData.lenses) && aimData.lenses.length > 0) {
+        if (currentState !== 'A' && selectedPillar) {
+          // Filter lenses that apply to the selected pillar
+          lensesToShow = aimData.lenses.filter(l => Array.isArray(l.pillars) && l.pillars.includes(selectedPillar));
+          heading = (aimData.pillarNames[selectedPillar] || '') + ' lenses';
+        } else {
+          // Show all lenses
+          lensesToShow = aimData.lenses.slice();
+        }
       }
+      // Update the lenses heading
+      titleEl.textContent = heading;
+      // If no lenses to show
+      if (!lensesToShow || lensesToShow.length === 0) {
+        listEl.textContent = 'No lenses';
+        return;
+      }
+      // Clear existing list
+      listEl.innerHTML = '';
+      // Sort by confidence descending and limit to top 5
+      const sorted = lensesToShow.slice().sort((a, b) => {
+        const ca = (typeof a.confidence === 'number') ? a.confidence : 50;
+        const cb = (typeof b.confidence === 'number') ? b.confidence : 50;
+        return cb - ca;
+      });
+      const topLenses = sorted.slice(0, 5);
+      topLenses.forEach(lens => {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '6px';
+        container.style.cursor = 'default';
+        // Confidence dot: colour depends on heatmap state
+        const dot = document.createElement('span');
+        dot.style.display = 'inline-block';
+        dot.style.width = '10px';
+        dot.style.height = '10px';
+        dot.style.borderRadius = '50%';
+        let color;
+        if (showConfidence) {
+          const heat = computeHeatColor((typeof lens.confidence === 'number') ? lens.confidence : 50);
+          color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
+        } else {
+          // neutral grey dot when confidence heatmap is off
+          color = '#888888';
+        }
+        dot.style.backgroundColor = color;
+        container.appendChild(dot);
+        // Lens text (truncate long titles/beliefs for display).  Use lens.title if provided; fall back to belief text.
+        const textSpan = document.createElement('span');
+        const baseText = (lens.title && lens.title.length > 0) ? lens.title.trim() : (typeof lens.belief === 'string' ? lens.belief.trim() : '');
+        const displayText = baseText.length > 50 ? baseText.slice(0, 47).trim() + '…' : baseText;
+        textSpan.textContent = displayText;
+        textSpan.style.flex = '1';
+        textSpan.style.fontSize = '0.85rem';
+        textSpan.style.color = '#333';
+        // Use title attribute to show full lens belief on hover
+        const fullLensText = (typeof lens.belief === 'string') ? lens.belief.trim() : '';
+        textSpan.setAttribute('title', fullLensText);
+        container.appendChild(textSpan);
+        // Append small coloured squares for pillar attachments
+        if (Array.isArray(lens.pillars) && lens.pillars.length > 0) {
+          const attachContainer = document.createElement('span');
+          attachContainer.style.display = 'flex';
+          attachContainer.style.gap = '3px';
+          lens.pillars.forEach(pillarIdx => {
+            const sq = document.createElement('span');
+            sq.style.display = 'inline-block';
+            sq.style.width = '8px';
+            sq.style.height = '8px';
+            sq.style.borderRadius = '2px';
+            const rgb = pillarBases[pillarIdx - 1] || [136,136,136];
+            const attachColor = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${depthAlpha[1]})`;
+            sq.style.backgroundColor = attachColor;
+            attachContainer.appendChild(sq);
+          });
+          container.appendChild(attachContainer);
+        }
+        // Attach tooltip events for lens: show full lens details
+        container.addEventListener('mouseenter', (e) => {
+          showTooltip(e, lens);
+        });
+        container.addEventListener('mousemove', (e) => {
+          moveTooltip(e);
+        });
+        container.addEventListener('mouseleave', (e) => {
+          hideTooltip();
+        });
+        listEl.appendChild(container);
+      });
     }
 
     /**
@@ -1520,6 +1542,11 @@ micro:3:3:3,Follow-up closes the loop`;
 
       // Add an invisible disc over the centre to enable tooltips on the centre
       addCenterHover(g);
+
+      // Update the lenses sidebar whenever the chart state changes.
+      // Calling updateLenses here ensures the lens list and heading reflect
+      // the currently selected pillar or remain unfiltered in the global view.
+      updateLenses();
     }
 
     /**
@@ -1674,7 +1701,7 @@ micro:3:3:3,Follow-up closes the loop`;
         lines.forEach((line, i) => {
           textEl.append('tspan')
             .attr('x', 0)
-            .attr('dy', i === 0 ? -(lines.length - 1) / 2 * (fontSize + 2) : (fontSize + 2))
+            .attr('dy', i === 0 ? -(lines.length - 1) / 2 * (fontSize + centerLineGap) : (fontSize + centerLineGap))
             .style('font-weight', i === 0 ? '700' : '400')
             .text(line);
         });
@@ -1698,7 +1725,7 @@ micro:3:3:3,Follow-up closes the loop`;
         lines.forEach((line, i) => {
           textEl.append('tspan')
             .attr('x', 0)
-            .attr('dy', i === 0 ? -(lines.length - 1) / 2 * (fontSize + 2) : (fontSize + 2))
+            .attr('dy', i === 0 ? -(lines.length - 1) / 2 * (fontSize + centerLineGap) : (fontSize + centerLineGap))
             .style('font-weight', i === 0 ? '700' : '400')
             .text(line);
         });
@@ -1728,7 +1755,7 @@ micro:3:3:3,Follow-up closes the loop`;
         lines.forEach((line, i) => {
           textEl.append('tspan')
             .attr('x', 0)
-            .attr('dy', i === 0 ? -(lines.length - 1) / 2 * (fontSize + 2) : (fontSize + 2))
+            .attr('dy', i === 0 ? -(lines.length - 1) / 2 * (fontSize + centerLineGap) : (fontSize + centerLineGap))
             .style('font-weight', i === 0 && subTitle ? '700' : '400')
             .text(line);
         });
