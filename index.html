@@ -14,7 +14,7 @@
     CSV file (examples/aim.csv by default) that can be replaced at runtime
     via the “Load CSV” button.
   -->
-  <title>AIM (Aspirational Identity Map)</title>
+    <title>AIM (Aspirational Identity Map)</title>
   <style>
     /* Basic reset and typography */
     html, body {
@@ -63,6 +63,37 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
+    }
+
+    /* Tabs for switching between AIM and project views */
+    #tabBar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .tabButton {
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: #f5f5f5;
+      border: 1px solid #cccccc;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .tabButton.active {
+      background: #ffffff;
+      border-color: #999999;
+      font-weight: 600;
+    }
+    .tabButton:hover {
+      background: #efefef;
+    }
+
+    /* Heatmap select styling */
+    #heatmapSelect {
+      font-size: 0.85rem;
+      padding: 4px 6px;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
     }
     button {
       padding: 6px 12px;
@@ -222,23 +253,72 @@
   </style>
 </head>
 <body>
-  <header id="titleBar">AIM</header>
-  <div id="container">
-    <div id="chartWrapper">
+  <header id="titleBar" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding-right:16px;">
+    <span id="titleText">AIM</span>
+    <div id="headerActions" style="display:flex; gap:8px; align-items:center;">
+      <!-- Home button: navigate back to the core view without reloading data -->
+      <button id="resetBtn" class="iconButton" aria-label="Home" title="Home">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 3l10 9h-3v9h-5v-6h-2v6H6v-9H3l9-9z" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- Save button: downloads the current dataset as CSV -->
+      <button id="saveBtn" class="iconButton" aria-label="Save" title="Save CSV">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M17 17H7v-2h10v2zm0-4H7V11h10v2zm0-4H7V7h10v2zm3-5H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 20V6h16v14H4z" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- Upload button: up arrow with line -->
+      <button id="uploadBtn" class="iconButton" aria-label="Upload CSV" title="Upload CSV">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 5l5 5h-3v6h-4v-6H7l5-5zm-7 14h14v2H5v-2z" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- View data button: four squares -->
+      <button id="viewTableBtn" class="iconButton" aria-label="View data" title="View data">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+  <!-- Tabs to switch between AIM and Projects views -->
+  <div id="tabBar">
+    <button id="aimTab" class="tabButton active" aria-label="Show AIM view">AIM</button>
+    <button id="projectsTab" class="tabButton" aria-label="Show projects view">Projects</button>
+  </div>
+  <!-- AIM view wrapper -->
+  <div id="aimView">
+    <div id="container">
+      <div id="chartWrapper">
       <!-- Chart SVG will be inserted here -->
       <svg id="aimChart" role="img" aria-label="Aspirational Identity Map"></svg>
     </div>
     <div id="sidebar">
       <div id="legend" aria-label="Pillar legend"></div>
 
-      <!-- Toggle to switch alignment heatmap on/off -->
-      <div id="confidenceToggleContainer" style="font-size:0.85rem; display:flex; align-items:center; cursor:pointer; gap:4px; margin-top:8px;">
-        <input type="checkbox" id="confidenceToggle" aria-label="Toggle alignment heatmap">
-        <span>Alignment heatmap</span>
+      <!-- Heatmap selection -->
+      <div id="heatmapToggleContainer" style="font-size:0.85rem; display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin-top:8px; padding-bottom:8px; border-bottom:1px solid #e0e0e0;">
+        <!-- Row for the heatmap label and info icon -->
+        <div style="display:flex; align-items:center; gap:4px;">
+          <label for="heatmapSelect" style="font-weight:600; margin:0;">Heatmap</label>
+          <!-- Info icon: description updates based on selected type -->
+          <span id="heatmapInfo" title="" style="display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; border:1px solid #999; font-size:10px; cursor:default; line-height:14px;">i</span>
+        </div>
+        <!-- Heatmap select on its own line beneath the label -->
+        <select id="heatmapSelect" aria-label="Select heatmap type" style="margin-left:0; margin-top:2px;">
+          <option value="off">Off</option>
+          <option value="confidence">Alignment</option>
+          <option value="ac">Adaptive challenge</option>
+          <option value="ce">Celebration</option>
+          <option value="cx">Collective experience</option>
+        </select>
+        <!-- Legend / key for the heatmap. Updated dynamically based on selected type. -->
+        <div id="heatmapLegend" style="font-size:0.75rem; line-height:1.2; margin-top:4px; margin-left:0; max-width:220px;"></div>
       </div>
 
-      <!-- Action buttons: reset and view data grouped together -->
-      <div id="actionButtons" style="display:flex; gap:8px; margin-top:8px;">
+      <!-- Action buttons moved to header: hide sidebar copy -->
+      <div id="actionButtons" style="display:none;">
         <!-- Icon-only buttons with tooltips -->
         <!-- Reset button: large circular arrow -->
         <button id="resetBtn" class="iconButton" aria-label="Reload map" title="Reload map">
@@ -270,8 +350,38 @@
         </div>
         <div id="lensesList" style="font-size:0.85rem; color:#333;">No lenses</div>
       </div>
-      <input type="file" id="csvFileInput" accept=".csv" style="display:none" aria-label="CSV file input">
+    <input type="file" id="csvFileInput" accept=".csv" style="display:none" aria-label="CSV file input">
+    </div> <!-- end sidebar -->
+    </div> <!-- end container -->
+  </div> <!-- end aimView -->
+  <!-- Projects view: hidden by default -->
+  <div id="projectsView" style="display:none; padding:16px;">
+    <h2 style="margin-top:0; font-size:1.2rem; font-weight:600;">Projects</h2>
+    <!-- Action buttons duplicated for projects view -->
+    <div id="projectsButtons" style="display:none;">
+      <!-- Reset map (projects) reuses the same functionality -->
+      <button id="resetBtnProjects" class="iconButton" aria-label="Reload map" title="Reload map">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 4V1L6 7l6 6V8a6 6 0 1 1-6 6H5a7 7 0 1 0 7-7z" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- Upload CSV for projects view -->
+      <button id="uploadBtnProjects" class="iconButton" aria-label="Upload CSV" title="Upload CSV">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 5l5 5h-3v6h-4v-6H7l5-5zm-7 14h14v2H5v-2z" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- View data for projects view -->
+      <button id="viewTableBtnProjects" class="iconButton" aria-label="View data" title="View data">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z" fill="currentColor"/>
+        </svg>
+      </button>
     </div>
+    <div id="projectsList" style="display:flex; flex-direction:column; gap:12px;"></div>
+    <!-- Button to show additional projects.  A margin is added to separate it from the list below. -->
+    <button id="showMoreProjectsBtn" style="display:none; padding:6px 12px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; background:#f5f5f5; cursor:pointer; margin-top:12px;">Show more</button>
+    <button id="showLessProjectsBtn" style="display:none; padding:6px 12px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; background:#f5f5f5; cursor:pointer; margin-top:4px;">Show less</button>
   </div>
   <div id="tooltip" role="tooltip" aria-hidden="true"></div>
   <div id="tableOverlay" role="dialog" aria-modal="true" aria-label="AIM table view">
@@ -282,7 +392,7 @@
         <label for="editTitleInput" style="font-size:0.85rem;">Name:</label>
         <input type="text" id="editTitleInput" placeholder="Enter map name" style="flex:1; min-width:150px; padding:4px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px;">
         <!-- Download CSV: icon-only button inside overlay -->
-        <button id="downloadCsvBtn" class="iconButton" aria-label="Download CSV" title="Download CSV">
+        <button id="downloadCsvBtn" class="iconButton" aria-label="Save CSV" title="Save CSV">
           <!-- Down arrow icon with line -->
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M12 2v14m0 0l-5-5m5 5l5-5M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -295,20 +405,34 @@
           </svg>
         </button>
       </div>
-      <!-- Simple filter select to filter rows by pillar or lens. Populated dynamically -->
-      <select id="tableFilterSelect" style="margin-bottom:6px; padding:4px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px;">
-        <option value="all">All entries</option>
-      </select>
+      <!-- Filter and search row: show the filter select and search input on one line -->
+      <div style="margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <select id="tableFilterSelect" style="padding:4px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px;">
+          <option value="all">All entries</option>
+        </select>
+        <input type="search" id="tableSearch" placeholder="Search title or belief…" aria-label="Search titles or beliefs" style="flex:1; min-width:150px; padding:4px; font-size:0.85rem; border:1px solid #ccc; border-radius:4px;">
+      </div>
 
       <!-- Note shown when editing is enabled -->
       <div id="editNote" style="display:none; font-size:0.75rem; color:#666; margin-bottom:6px;">
         Changes will only persist for this session. Download the CSV to save your edits.
       </div>
-
-      <input type="search" id="tableSearch" placeholder="Search title or belief…" aria-label="Search titles or beliefs">
+      <!-- Tab bar for switching between AIM and Projects in the data view -->
+      <div id="dataTabBar" style="display:flex; gap:8px; margin:6px 0;">
+        <button id="dataTabAimBtn" class="tabButton active" aria-label="Show AIM data">Beliefs</button>
+        <button id="dataTabProjectsBtn" class="tabButton" aria-label="Show projects data">Projects</button>
+      </div>
+      <!-- Table for AIM nodes (beliefs and lenses) -->
       <table id="nodeTable">
         <thead>
-        <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Title</th><th>Belief</th><th>Confidence</th><th>Last updated</th><th>Applies to</th></tr>
+        <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Title</th><th>Belief</th><th>Confidence</th><th>Last updated</th><th>Adaptive</th><th>Celebration</th><th>Collective experience</th><th>Applies to</th><th>Today</th><th>Details</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <!-- Table for Projects (hidden by default) -->
+      <table id="projectsTable" style="display:none; margin-top:8px;">
+        <thead>
+          <tr><th>Name</th><th>Type</th><th>Measure</th><th>Start</th><th>Target</th><th>Days/week</th><th>Duration</th><th>Benefit</th><th>Today</th><th>Details</th><th>Priority (user)</th><th>Priority (AI)</th><th>Outcome</th><th>Acceptance</th><th>Reference</th><th>Pillar</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -396,6 +520,72 @@
       if (isNaN(date)) return '';
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
+
+    /**
+     * Returns a descriptive phrase for a segmentation pole value.
+     * The value is expected to be an integer from -3 to +3 and the
+     * letter indicates which side is considered positive.  A positive
+     * value means the orientation equals the provided letter; a negative
+     * value means the opposite orientation.  A zero value yields
+     * "balanced".  The wording follows these rules:
+     *  ±1 → "leans …";
+     *  ±2 → "strong … tilt";
+     *  ±3 → "is very … oriented".
+     * @param {number|null} val Numeric value −3..+3 (null if missing)
+     * @param {string|null} letter The right-side letter (C,G,D,P,A,S)
+     * @param {string} type Pole type: 'ac','ce','cx'
+     * @returns {string} Human-friendly description or empty string if not applicable
+     */
+    function getPolePhrase(val, letter, type) {
+      // Returns a human‑friendly phrase describing the orientation strength and direction for
+      // a given segmentation pole.  The `val` is an integer from –3 to +3, where the
+      // sign indicates which side of the pole the belief leans toward and the
+      // magnitude indicates how strong the leaning is.  The `letter` identifies the
+      // original orientation letter (e.g., C or G for adaptive challenge).  When
+      // val is 0, the belief is balanced between the two poles.  For non‑zero
+      // values, we compute the appropriate orientation name (Constant, Guided,
+      // Destination, Practice, Asynchronous, Synchronized) and return a phrase
+      // like “leans Constant”, “strong Guided tilt”, or “is very Destination oriented”.
+      if (val === null || val === undefined || letter === null || !type) return '';
+      const names = {
+        ac: { C: 'Constant', G: 'Guided' },
+        ce: { D: 'Destination', P: 'Practice' },
+        cx: { A: 'Asynchronous', S: 'Synchronized' }
+      };
+      const opposites = {
+        ac: { C: 'G', G: 'C' },
+        ce: { D: 'P', P: 'D' },
+        cx: { A: 'S', S: 'A' }
+      };
+      const poleNames = names[type] || {};
+      const oppositeMap = opposites[type] || {};
+      let orientationLetter;
+      if (val > 0) {
+        // Positive values use the provided orientation letter
+        orientationLetter = letter.toUpperCase();
+      } else if (val < 0) {
+        // Negative values invert the orientation letter to the opposite side
+        orientationLetter = oppositeMap[letter.toUpperCase()] || letter.toUpperCase();
+      } else {
+        return 'balanced';
+      }
+      const orientationName = poleNames[orientationLetter] || '';
+      const abs = Math.abs(val);
+      let phrase;
+      if (abs === 1) {
+        // Mild leaning
+        phrase = 'leans ' + orientationName;
+      } else if (abs === 2) {
+        // Strong leaning
+        phrase = 'strong ' + orientationName + ' tilt';
+      } else if (abs === 3) {
+        // Very strong leaning
+        phrase = 'is very ' + orientationName + ' oriented';
+      } else {
+        phrase = '';
+      }
+      return phrase;
+    }
     // Data model for the current AIM dataset
     let aimData = null;
     // Current visual state: 'A' (global), 'B' (pillar focus), 'C' (sub focus)
@@ -408,7 +598,9 @@
     // the base pillar colours are blended with a hue based on each belief’s
     // confidence (0–100).  This is controlled via the "Show confidence
     // heatmap" checkbox in the sidebar.
-    let showConfidence = false;
+    // Heatmap mode: 'off', 'confidence', 'ac', 'ce', 'cx'.  Determines which
+    // metric is used to colour the wedges.  'off' disables the heatmap.
+    let heatmapType = 'off';
 
     /**
      * Blending coefficient for the confidence heatmap.  When the heatmap is
@@ -455,17 +647,33 @@
     function computeFillColor(descriptor) {
       const base = pillarBases[descriptor.pillar - 1];
       const alpha = depthAlpha[descriptor.depth];
-      if (!showConfidence) {
+      // No heatmap selected: return base colour with depth alpha
+      if (!heatmapType || heatmapType === 'off') {
         return `rgba(${base[0]},${base[1]},${base[2]},${alpha})`;
       }
-      // Use pure heat colour when the confidence heatmap is enabled.  The
-      // ratio is set to 1.0, so no blending with the base colour occurs.  This
-      // produces a clear red‑to‑green gradient independent of the pillar.
-      const heat = computeHeatColor(descriptor.confidence || 50);
-      const r = heat[0];
-      const g = heat[1];
-      const b = heat[2];
-      return `rgba(${r},${g},${b},${alpha})`;
+      // Determine value for heatmap: use different properties based on mode
+      let val;
+      if (heatmapType === 'confidence') {
+        val = (descriptor.confidence !== undefined) ? descriptor.confidence : 50;
+        // clamp to 0–100
+        val = Math.max(0, Math.min(100, val));
+      } else if (heatmapType === 'ac') {
+        // Adaptive Challenge: map value (-3..3) to 0–100
+        const v = (descriptor.pole_ac_value !== null && descriptor.pole_ac_value !== undefined) ? descriptor.pole_ac_value : 0;
+        val = ((v + 3) / 6) * 100;
+      } else if (heatmapType === 'ce') {
+        // Celebration pole
+        const v = (descriptor.pole_ce_value !== null && descriptor.pole_ce_value !== undefined) ? descriptor.pole_ce_value : 0;
+        val = ((v + 3) / 6) * 100;
+      } else if (heatmapType === 'cx') {
+        // Collective Experience pole
+        const v = (descriptor.pole_cx_value !== null && descriptor.pole_cx_value !== undefined) ? descriptor.pole_cx_value : 0;
+        val = ((v + 3) / 6) * 100;
+      } else {
+        val = 50;
+      }
+      const heat = computeHeatColor(val);
+      return `rgba(${heat[0]},${heat[1]},${heat[2]},${alpha})`;
     }
 
     // Cached DOM selections
@@ -488,44 +696,436 @@
       fileInput.addEventListener('change', handleFileUpload);
     }
 
-    // Reset button
+    // Home button: return to the global view without reloading data.  Clicking
+    // this button resets the visual state to show the core and all pillars
+    // but preserves any edits or loaded dataset.  It does not clear
+    // alignment or heatmap settings.
     document.getElementById('resetBtn').addEventListener('click', () => {
-      // When reset is clicked, reload the page to ensure the latest CSV is
-      // loaded (including any changes on disk).  This will also reset
-      // the visual state and disable the heatmap.  Use location.reload()
-      // which preserves query parameters but forces a fresh read of the CSV.
-      window.location.reload();
+      // Reset state variables
+      currentState = 'A';
+      selectedPillar = null;
+      selectedSub = null;
+      preselectedSub = null;
+      // Re-render chart, legend and lenses to reflect the global view
+      updateChart();
+      updateLegend();
+      updateLenses();
+      updateHeatmapLegend();
     });
 
     // Table view controls
     const tableOverlay = document.getElementById('tableOverlay');
     const tableBody = document.querySelector('#nodeTable tbody');
+  const projectsTableBody = document.querySelector('#projectsTable tbody');
     const closeTableBtn = document.getElementById('closeTableBtn');
     const viewTableBtn = document.getElementById('viewTableBtn');
     const tableSearchInput = document.getElementById('tableSearch');
     const editTitleInput = document.getElementById('editTitleInput');
     const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+  // Save button in header
+  const saveBtn = document.getElementById('saveBtn');
   const editDataBtn = document.getElementById('editDataBtn');
   const editNote = document.getElementById('editNote');
+  // Duplicate action buttons for projects view
+  const resetBtnProjects = document.getElementById('resetBtnProjects');
+  const uploadBtnProjects = document.getElementById('uploadBtnProjects');
+  const viewTableBtnProjects = document.getElementById('viewTableBtnProjects');
+
+  // Data tab elements for switching between AIM (beliefs) and Projects views in the data overlay
+  const dataTabAimBtn = document.getElementById('dataTabAimBtn');
+  const dataTabProjectsBtn = document.getElementById('dataTabProjectsBtn');
+  const nodeTable = document.getElementById('nodeTable');
+  const projectsTable = document.getElementById('projectsTable');
+
+  // Keep track of which data table is active in the overlay ('aim' or 'projects')
+  let currentDataTab = 'aim';
+
+  /**
+   * Shows the requested data tab ('aim' for beliefs/lenses or 'projects' for project data).
+   * Updates the active styling on the tab buttons, toggles the visibility of
+   * the corresponding table and search/filter controls, and rebuilds the
+   * relevant table view when switching.  The search box is shared; it
+   * always searches within the currently visible table.
+   * @param {string} tab - 'aim' or 'projects'
+   */
+  function showDataTab(tab) {
+    currentDataTab = tab;
+    // Update active classes on tab buttons
+    if (dataTabAimBtn) dataTabAimBtn.classList.toggle('active', tab === 'aim');
+    if (dataTabProjectsBtn) dataTabProjectsBtn.classList.toggle('active', tab === 'projects');
+    // Toggle tables
+    if (nodeTable) nodeTable.style.display = (tab === 'aim') ? '' : 'none';
+    if (projectsTable) projectsTable.style.display = (tab === 'projects') ? '' : 'none';
+    // Keep the filter select visible regardless of tab.  Filtering applies
+    // primarily to beliefs; projects ignore the filter but keep the control
+    // visible for consistency.
+    // Rebuild the appropriate table view
+    if (tab === 'aim') {
+      buildTableView();
+    } else {
+      buildProjectsTableView();
+    }
+  }
+
+  /**
+   * Builds the projects table view.  Iterates over aimData.projects and
+   * populates rows with human‑friendly column names.  Allows editing of
+   * free‑text fields when editingEnabled is true.  Numerical values are
+   * treated as text for editing purposes.  Changes persist only in the
+   * current session until the user downloads the CSV.
+   */
+  function buildProjectsTableView() {
+    if (!aimData) return;
+    if (!projectsTableBody) return;
+    projectsTableBody.innerHTML = '';
+    // If no projects, display a single row with message
+    if (!aimData.projects || aimData.projects.length === 0) {
+      const tr = document.createElement('tr');
+      // Assign dataset attributes: projectIndex and pillar name for filtering
+      tr.dataset.projectIndex = idx;
+      if (proj.pillar && aimData.pillarNames[proj.pillar]) {
+        tr.dataset.pillar = aimData.pillarNames[proj.pillar];
+      }
+      const td = document.createElement('td');
+      td.colSpan = 14;
+      td.textContent = 'No projects defined.';
+      tr.appendChild(td);
+      projectsTableBody.appendChild(tr);
+      return;
+    }
+    // Build rows for projects
+    aimData.projects.forEach((proj, idx) => {
+      const tr = document.createElement('tr');
+      // Assign dataset attributes for editing and filtering.  projectIndex is used to highlight rows when editing
+      tr.dataset.projectIndex = idx;
+      // Set pillar name for filtering if available
+      if (proj.pillar && aimData.pillarNames[proj.pillar]) {
+        tr.dataset.pillar = aimData.pillarNames[proj.pillar];
+      }
+      // Determine pillar name for display if available
+      let pillarName = '';
+      if (proj.pillar && aimData.pillarNames[proj.pillar]) {
+        pillarName = aimData.pillarNames[proj.pillar];
+      }
+      // Helper to assign cell content and editing behaviour
+      function createCell(value, onBlur, editable) {
+        const td = document.createElement('td');
+        td.textContent = value || '';
+        if (editingEnabled && editable) {
+          td.contentEditable = true;
+          td.style.backgroundColor = '#fff8e1';
+          td.addEventListener('blur', onBlur);
+        }
+        return td;
+      }
+      // Name (project action or fallback to outcome/title/belief)
+      const nameVal = proj.action || proj.outcome || proj.benefit || '(Unnamed project)';
+      tr.appendChild(createCell(nameVal, () => {
+        const newVal = tr.children[0].textContent.trim();
+        proj.action = newVal;
+        buildProjectsTableView();
+        updateProjectsView();
+      }, true));
+      // Type (Practice or Sprint)
+      const typeVal = (proj.type || '').toLowerCase() === 'sprint' ? 'Sprint' : (proj.type ? 'Practice' : '');
+      tr.appendChild(createCell(typeVal, () => {
+        // Allow editing of type by entering 'practice' or 'sprint'
+        const val = tr.children[1].textContent.trim();
+        // Normalise input
+        const lower = val.toLowerCase();
+        if (lower === 'sprint' || lower === 'practice') {
+          proj.type = lower;
+        }
+        buildProjectsTableView();
+        updateProjectsView();
+      }, true));
+      const isSprintRow = (proj.type || '').toLowerCase() === 'sprint';
+      // Measure
+      tr.appendChild(createCell(isSprintRow ? '' : (proj.measure || ''), () => {
+        proj.measure = tr.children[2].textContent.trim();
+      }, !isSprintRow));
+      // Start (treat as string for editing)
+      tr.appendChild(createCell(isSprintRow ? '' : ((proj.start !== null && proj.start !== undefined) ? String(proj.start) : ''), () => {
+        const val = tr.children[3].textContent.trim();
+        proj.start = val;
+      }, !isSprintRow));
+      // Target
+      tr.appendChild(createCell(isSprintRow ? '' : ((proj.target !== null && proj.target !== undefined) ? String(proj.target) : ''), () => {
+        proj.target = tr.children[4].textContent.trim();
+      }, !isSprintRow));
+      // Days/week
+      tr.appendChild(createCell(isSprintRow ? '' : ((proj.days !== null && proj.days !== undefined) ? String(proj.days) : ''), () => {
+        proj.days = tr.children[5].textContent.trim();
+      }, !isSprintRow));
+      // Duration (only for sprint)
+      tr.appendChild(createCell(isSprintRow ? (proj.duration || '') : '', () => {
+        const val = tr.children[6].textContent.trim();
+        proj.duration = val;
+      }, isSprintRow));
+      // Benefit
+      tr.appendChild(createCell(proj.benefit || '', () => {
+        proj.benefit = tr.children[7].textContent.trim();
+      }, true));
+      // Today
+      tr.appendChild(createCell(proj.today_state || '', () => {
+        proj.today_state = tr.children[8].textContent.trim();
+      }, true));
+      // Details
+      tr.appendChild(createCell(proj.details || '', () => {
+        proj.details = tr.children[9].textContent.trim();
+      }, true));
+      // Priority (user)
+      tr.appendChild(createCell(proj.priority_user || '', () => {
+        proj.priority_user = tr.children[10].textContent.trim();
+        // Resort projects after editing priority
+        buildProjectsTableView();
+        updateProjectsView();
+      }, true));
+      // Priority (AI)
+      tr.appendChild(createCell(proj.priority_ai || '', () => {
+        proj.priority_ai = tr.children[11].textContent.trim();
+      }, true));
+      // Outcome
+      tr.appendChild(createCell(proj.outcome || '', () => {
+        proj.outcome = tr.children[12].textContent.trim();
+      }, true));
+      // Acceptance
+      tr.appendChild(createCell(proj.acceptance || '', () => {
+        proj.acceptance = tr.children[13].textContent.trim();
+      }, true));
+      // Reference
+      tr.appendChild(createCell(proj.ref || '', () => {
+        proj.ref = tr.children[14].textContent.trim();
+      }, true));
+      // Pillar
+      tr.appendChild(createCell(pillarName, null, false));
+      projectsTableBody.appendChild(tr);
+    });
+  }
+
   // Flag to indicate whether editing mode is enabled.  When true, table
   // cells become editable and the Applies column uses a multi‑select for
   // lenses.  Edits persist only during the current session.
   let editingEnabled = false;
 
-    // Confidence heatmap toggle
-    const confidenceToggle = document.getElementById('confidenceToggle');
-    if (confidenceToggle) {
-      confidenceToggle.addEventListener('change', () => {
-        showConfidence = confidenceToggle.checked;
+    // Heatmap selection handler.  Update the heatmapType and re-render chart and lenses.
+    const heatmapSelect = document.getElementById('heatmapSelect');
+    const heatmapInfoEl = document.getElementById('heatmapInfo');
+    /**
+     * Updates the tooltip on the heatmap info icon based on the selected
+     * heatmap type.  Provides a concise description of what the colours
+     * represent for each metric.  Called whenever the heatmap selection
+     * changes.
+     */
+    function updateHeatmapInfo() {
+      if (!heatmapInfoEl) return;
+      let desc = '';
+      switch (heatmapType) {
+        case 'confidence':
+          desc = 'Alignment heatmap: red = low alignment; green = high alignment. Based on how recently and frequently you mention a topic.';
+          break;
+        case 'ac':
+          desc = 'Adaptive challenge: red = Constant; green = Guided.';
+          break;
+        case 'ce':
+          desc = 'Celebration: red = Destination; green = Practice.';
+          break;
+        case 'cx':
+          desc = 'Collective experience: red = Asynchronous; green = Synchronized.';
+          break;
+        default:
+          desc = 'No heatmap overlay.';
+      }
+      heatmapInfoEl.title = desc;
+    }
+
+    /**
+     * Updates the visual legend for the current heatmap type.  When a
+     * heatmap is selected, the legend displays a simple colour bar
+     * illustrating the mapping from red (left) to green (right) along with
+     * the orientation names on each end.  A small info icon on the right
+     * of each label provides a tooltip definition for that orientation.
+     */
+    function updateHeatmapLegend() {
+      const legendEl = document.getElementById('heatmapLegend');
+      if (!legendEl) return;
+      // Clear existing content
+      legendEl.innerHTML = '';
+      // Ensure the legend element stretches across its container so
+      // orientation names can justify space between left and right.  Without
+      // explicitly setting a width, the legend container may shrink to fit
+      // its contents, causing the names to run together.
+      legendEl.style.width = '100%';
+      // Helper to create a gradient bar with labels and definitions.  Accepts flags
+      // showDefs and showSwatches to control whether the definitions row is
+      // displayed and whether coloured swatches accompany definitions.  This
+      // allows alignment and pole legends to omit squares and redundant
+      // orientation names.
+      function createLegend(leftName, rightName, leftDef, rightDef, showDefs = true, showSwatches = true) {
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.gap = '3px';
+        // Ensure the legend uses the full available width so names separate properly
+        wrapper.style.width = '100%';
+        // Gradient bar illustrating colour range from red (left) to green (right)
+        const bar = document.createElement('div');
+        bar.style.height = '6px';
+        bar.style.borderRadius = '3px';
+        bar.style.background = 'linear-gradient(90deg, #e74c3c 0%, #e67e22 30%, #f1c40f 60%, #2ecc71 100%)';
+        bar.style.width = '100%';
+        wrapper.appendChild(bar);
+        // Row of orientation names with tooltips; bold font emphasises the pole names
+        const namesRow = document.createElement('div');
+        namesRow.style.display = 'flex';
+        namesRow.style.justifyContent = 'space-between';
+        namesRow.style.fontSize = '0.75rem';
+        namesRow.style.fontWeight = '600';
+        namesRow.style.color = '#333';
+        namesRow.style.width = '100%';
+        const leftNameSpan = document.createElement('span');
+        leftNameSpan.textContent = leftName;
+        leftNameSpan.title = leftDef;
+        leftNameSpan.style.cursor = 'help';
+        const rightNameSpan = document.createElement('span');
+        rightNameSpan.textContent = rightName;
+        rightNameSpan.title = rightDef;
+        rightNameSpan.style.cursor = 'help';
+        rightNameSpan.style.textAlign = 'right';
+        namesRow.appendChild(leftNameSpan);
+        namesRow.appendChild(rightNameSpan);
+        wrapper.appendChild(namesRow);
+        // Optional definitions row
+        if (showDefs) {
+          const defsRow = document.createElement('div');
+          defsRow.style.display = 'flex';
+          defsRow.style.justifyContent = 'space-between';
+          defsRow.style.fontSize = '0.7rem';
+          defsRow.style.color = '#555';
+          // Left definition cell
+          const leftCell = document.createElement('div');
+          leftCell.style.display = 'flex';
+          leftCell.style.alignItems = 'center';
+          leftCell.style.gap = '4px';
+          if (showSwatches) {
+            const leftSwatch = document.createElement('span');
+            leftSwatch.style.display = 'inline-block';
+            leftSwatch.style.width = '10px';
+            leftSwatch.style.height = '10px';
+            leftSwatch.style.borderRadius = '2px';
+            leftSwatch.style.background = '#e74c3c';
+            leftCell.appendChild(leftSwatch);
+          }
+          const leftDefSpan = document.createElement('span');
+          leftDefSpan.textContent = leftDef;
+          leftDefSpan.style.flex = '1';
+          leftCell.appendChild(leftDefSpan);
+          // Right definition cell
+          const rightCell = document.createElement('div');
+          rightCell.style.display = 'flex';
+          rightCell.style.alignItems = 'center';
+          rightCell.style.gap = '4px';
+          rightCell.style.justifyContent = 'flex-end';
+          const rightDefSpan = document.createElement('span');
+          rightDefSpan.textContent = rightDef;
+          rightDefSpan.style.textAlign = 'right';
+          rightDefSpan.style.flex = '1';
+          if (showSwatches) {
+            const rightSwatch = document.createElement('span');
+            rightSwatch.style.display = 'inline-block';
+            rightSwatch.style.width = '10px';
+            rightSwatch.style.height = '10px';
+            rightSwatch.style.borderRadius = '2px';
+            rightSwatch.style.background = '#2ecc71';
+            rightCell.appendChild(rightSwatch);
+          }
+          rightCell.appendChild(rightDefSpan);
+          defsRow.appendChild(leftCell);
+          defsRow.appendChild(rightCell);
+          wrapper.appendChild(defsRow);
+        }
+        return wrapper;
+      }
+      // Determine legend based on heatmap type
+      switch (heatmapType) {
+        case 'confidence':
+          // Alignment heatmap: show bar with Low/High names, no definitions row.  Add a
+          // simple explanatory sentence beneath the bar to help users understand
+          // how alignment is inferred.
+          legendEl.appendChild(createLegend('Low', 'High', '', '', false, false));
+          {
+            const expl = document.createElement('div');
+            expl.style.fontSize = '0.7rem';
+            expl.style.color = '#555';
+            expl.style.marginTop = '4px';
+            expl.textContent = 'Alignment reflects how recently and frequently you’ve mentioned a topic—higher scores mean stronger alignment with your current wishes.';
+            legendEl.appendChild(expl);
+          }
+          break;
+        case 'ac':
+          // Adaptive challenge: bar with names and definitions without squares.  Definitions omit the
+          // orientation names because they are redundant — the pole names appear in the row above.
+          legendEl.appendChild(createLegend(
+            'Constant',
+            'Guided',
+            'Uses a fixed system shared by many and involves doing the same amount each time.',
+            'Personalised experience fitting overall status and changing micro needs.',
+            true,
+            false
+          ));
+          break;
+        case 'ce':
+          // Celebration: bar with names and definitions without squares and without redundant pole names
+          legendEl.appendChild(createLegend(
+            'Destination',
+            'Practice',
+            'Revolves around reaching a specific end result or milestone.',
+            'Is woven into the ongoing practice and process.',
+            true,
+            false
+          ));
+          break;
+        case 'cx':
+          // Collective experience: bar with names and definitions without squares and without redundant pole names
+          legendEl.appendChild(createLegend(
+            'Asynchronous',
+            'Synchronized',
+            'Activities are mostly independent with no regular shared schedule or group.',
+            'Part of a collective experience with shared rhythm and support.',
+            true,
+            false
+          ));
+          break;
+        default:
+          legendEl.textContent = '';
+      }
+    }
+    if (heatmapSelect) {
+      heatmapSelect.addEventListener('change', () => {
+        heatmapType = heatmapSelect.value || 'off';
         updateChart();
-        // Also update lenses colour when confidence toggled
         updateLenses();
+        updateHeatmapInfo();
+        updateHeatmapLegend();
       });
+      // Initialise heatmap info when page loads
+      heatmapType = heatmapSelect.value || 'off';
+      updateHeatmapInfo();
+      updateHeatmapLegend();
     }
 
     viewTableBtn.addEventListener('click', () => {
-      buildTableView();
+      // Determine which tab is active on the main page to decide default data view
+      const aimTabBtn = document.getElementById('aimTab');
+      const projectsTabBtn = document.getElementById('projectsTab');
+      let defaultTab = 'aim';
+      if (projectsTabBtn && projectsTabBtn.classList.contains('active')) {
+        defaultTab = 'projects';
+      }
+      // Show the overlay and appropriate table
       tableOverlay.style.display = 'flex';
+      // Show data tab based on context; this calls buildTableView or buildProjectsTableView internally
+      showDataTab(defaultTab);
       tableSearchInput.value = '';
       filterTable('');
       // Populate the editable title input with current map name
@@ -539,6 +1139,23 @@
     tableSearchInput.addEventListener('input', () => {
       filterTable(tableSearchInput.value.trim().toLowerCase());
     });
+
+    // Data tab click handlers: switch between AIM (beliefs/lenses) and Projects
+    if (dataTabAimBtn) {
+      dataTabAimBtn.addEventListener('click', () => {
+        showDataTab('aim');
+        if (tableSearchInput) tableSearchInput.value = '';
+        filterTable('');
+      });
+    }
+    if (dataTabProjectsBtn) {
+      dataTabProjectsBtn.addEventListener('click', () => {
+        showDataTab('projects');
+        if (tableSearchInput) tableSearchInput.value = '';
+        // For projects, no filtering logic yet; reuse filterTable to reset search results
+        filterTable('');
+      });
+    }
 
     // Toggle editing mode when the edit button is clicked.  Editing is
     // session‑only; changes are not saved back to the CSV unless the user
@@ -555,8 +1172,9 @@
         if (editNote) {
           editNote.style.display = editingEnabled ? 'block' : 'none';
         }
-        // Rebuild the table to apply or remove editable fields
+        // Rebuild the tables to apply or remove editable fields
         buildTableView();
+        buildProjectsTableView();
       });
     }
 
@@ -583,7 +1201,14 @@
           pageTitle = `AIM (Aspirational Identity Map): ${modeLabel}`;
         }
         document.title = pageTitle;
-        titleBar.text(pageTitle);
+        // Update only the text content inside the dedicated title span so we don't remove the header buttons
+        const titleSpan = document.getElementById('titleText');
+        if (titleSpan) {
+          titleSpan.textContent = pageTitle;
+        } else {
+          // Fallback: update the entire titleBar text if the span is missing
+          titleBar.text(pageTitle);
+        }
       });
     }
 
@@ -645,6 +1270,15 @@
       });
     }
 
+ // Save button handler: triggers the same download as the "Download CSV" button
+ if (saveBtn) {
+   saveBtn.addEventListener('click', () => {
+     if (downloadCsvBtn) {
+       downloadCsvBtn.click();
+     }
+   });
+ }
+
     // Keyboard shortcuts
     document.addEventListener('keydown', event => {
       // If overlay is open, Esc closes overlay only
@@ -676,6 +1310,32 @@
         }
       }
     });
+
+    // Projects view action buttons: delegate to existing buttons
+    if (resetBtnProjects) {
+      resetBtnProjects.addEventListener('click', () => {
+        // Trigger the same behaviour as the original reset button
+        if (resetBtn) resetBtn.click();
+      });
+    }
+    if (uploadBtnProjects) {
+      uploadBtnProjects.addEventListener('click', () => {
+        // Trigger the file input for CSV upload
+        if (csvFileInput) csvFileInput.click();
+      });
+    }
+    if (viewTableBtnProjects) {
+      viewTableBtnProjects.addEventListener('click', () => {
+        // Open data overlay and show projects tab by default
+        tableOverlay.style.display = 'flex';
+        showDataTab('projects');
+        tableSearchInput.value = '';
+        filterTable('');
+        if (editTitleInput) {
+          editTitleInput.value = aimData && aimData.title ? aimData.title : '';
+        }
+      });
+    }
 
     // Object to store computed radii for the current state; used for flash effects
     let currentRingRadii = {
@@ -758,7 +1418,7 @@ micro:3:3:3,Follow-up closes the loop`;
      * mode and pillar_name overrides.  Missing beliefs are left empty.
      */
     function parseCSV(rows) {
-      const data = {
+        const data = {
         title: '',
         mode: 'business',
         pillarNames: {},
@@ -768,8 +1428,10 @@ micro:3:3:3,Follow-up closes the loop`;
         pillars: {},
         subs: {},
         micros: {},
-        // lenses array: arbitrary list of strings
-        lenses: []
+        // lenses array: arbitrary list of lens objects
+        lenses: [],
+        // projects array: holds any projects defined in the CSV
+        projects: []
       };
       rows.forEach(row => {
         if (!row.label) return;
@@ -786,6 +1448,99 @@ micro:3:3:3,Follow-up closes the loop`;
             confidence = Math.max(0, Math.min(100, num));
           }
         }
+        // Parse segmentation pole values.  Poles can be specified either in a combined form (pole_ac, pole_ce, pole_cx)
+        // or via separate score and label columns (ac_score/ac_label, cp_score/cp_label, ce_score/ce_label).  If both
+        // forms are present, the split form takes precedence.
+        function parsePole(str) {
+          if (typeof str !== 'string' || str.trim() === '') return { value: null, letter: null };
+          const s = str.trim();
+          let match = s.match(/^(-?\d+)/);
+          let val = null;
+          if (match) {
+            val = parseInt(match[1]);
+          }
+          let letter = null;
+          const last = s[s.length - 1];
+          if (/[A-Za-z]/.test(last)) {
+            letter = last.toUpperCase();
+          }
+          return { value: isNaN(val) ? null : val, letter: letter };
+        }
+        // Helper to parse separate score/label columns
+        function parseSplitPole(scoreStr, labelStr) {
+          // Parse separate segmentation pole score and label fields.  The score
+          // should be an integer; the label column is treated purely as a
+          // descriptive phrase and should not be used to derive the
+          // orientation letter unless it is a single character (A, C, D, G, P, S).
+          let value = null;
+          if (scoreStr !== undefined && scoreStr !== null && scoreStr !== '') {
+            const num = parseInt(scoreStr);
+            if (!isNaN(num)) value = num;
+          }
+          let letter = null;
+          if (labelStr !== undefined && labelStr !== null) {
+            const trimmed = String(labelStr).trim();
+            // Only treat the label as an orientation letter if it is a single character.
+            if (trimmed.length === 1) {
+              letter = trimmed.toUpperCase();
+            }
+          }
+          return { value: value, letter: letter };
+        }
+        // Start with combined pole columns
+        let poleAc = parsePole(row.pole_ac);
+        let poleCe = parsePole(row.pole_ce);
+        let poleCx = parsePole(row.pole_cx);
+        // Override with split pole columns if provided
+        const splitAc = parseSplitPole(row.ac_score, row.ac_label);
+        if (splitAc.value !== null || splitAc.letter !== null) {
+          poleAc = {
+            value: splitAc.value !== null ? splitAc.value : poleAc.value,
+            letter: splitAc.letter !== null ? splitAc.letter : poleAc.letter
+          };
+        }
+        // Celebration and Collective experience may be stored in either cp_* or ce_* columns.
+        // According to the latest schema, cp_score/cp_label correspond to the Celebration pole
+        // (Destination ↔ Practice) and ce_score/ce_label correspond to the Collective experience pole
+        // (Asynchronous ↔ Synchronized).  Override poleCe and poleCx with these values if present.
+        const splitCelebration = parseSplitPole(row.cp_score, row.cp_label);
+        if (splitCelebration.value !== null || splitCelebration.letter !== null) {
+          poleCe = {
+            value: splitCelebration.value !== null ? splitCelebration.value : poleCe.value,
+            letter: splitCelebration.letter !== null ? splitCelebration.letter : poleCe.letter
+          };
+        }
+        const splitCollective = parseSplitPole(row.ce_score, row.ce_label);
+        if (splitCollective.value !== null || splitCollective.letter !== null) {
+          poleCx = {
+            value: splitCollective.value !== null ? splitCollective.value : poleCx.value,
+            letter: splitCollective.letter !== null ? splitCollective.letter : poleCx.letter
+          };
+        }
+        // Persist pole labels for use in tooltips and table.  We store the raw label strings if provided.
+        const poleAcLabel = row.ac_label !== undefined ? String(row.ac_label).trim() : '';
+        const poleCeLabel = row.cp_label !== undefined ? String(row.cp_label).trim() : '';
+        const poleCxLabel = row.ce_label !== undefined ? String(row.ce_label).trim() : '';
+        // Capture optional state, details, priority and new project fields
+        const todayState = row.today_state !== undefined ? String(row.today_state).trim() : '';
+        const detailsVal = row.details !== undefined ? String(row.details).trim() : '';
+        const priorityUser = row.priority_human !== undefined ? String(row.priority_human).trim() : '';
+        const priorityAi = row.priority_ai !== undefined ? String(row.priority_ai).trim() : '';
+        const projectOutcome = row.project_outcome !== undefined ? String(row.project_outcome).trim() : '';
+        const projectAcceptance = row.project_acceptance !== undefined ? String(row.project_acceptance).trim() : '';
+        const projectRef = row.project_ref !== undefined ? String(row.project_ref).trim() : '';
+        // New schema: project type and duration (for sprint projects).  project_type
+        // defines whether a row represents a practice or sprint project.  Duration
+        // applies only to sprint projects.  Types are lowercased for consistency.
+        const projectType = row.project_type !== undefined ? String(row.project_type).trim().toLowerCase() : '';
+        const durationVal = row.duration !== undefined ? String(row.duration).trim() : '';
+        // Capture legacy project fields (AIM‑1) for backward compatibility
+        const projectAction = row.project_action !== undefined ? String(row.project_action).trim() : '';
+        const projectMeasure = row.project_measure !== undefined ? String(row.project_measure).trim() : '';
+        const projectStart = row.project_start !== undefined && row.project_start !== '' ? parseFloat(row.project_start) : null;
+        const projectTarget = row.project_target !== undefined && row.project_target !== '' ? parseFloat(row.project_target) : null;
+        const projectDays = row.project_days_per_week !== undefined && row.project_days_per_week !== '' ? parseInt(row.project_days_per_week) : null;
+        const projectBenefit = row.project_benefit !== undefined ? String(row.project_benefit).trim() : '';
         if (label === 'title') {
           data.title = belief;
           return;
@@ -802,8 +1557,54 @@ micro:3:3:3,Follow-up closes the loop`;
           return;
         }
         if (label === 'core') {
-          // Store core belief and confidence along with optional title
-          data.core = { label: 'Core', title: title || '', belief: belief, confidence: confidence, updated: updated };
+          // Store core belief and associated metadata
+          data.core = {
+            label: 'Core',
+            title: title || '',
+            belief: belief,
+            confidence: confidence,
+            updated: updated,
+            pole_ac_value: poleAc.value,
+            pole_ac_letter: poleAc.letter,
+            pole_ce_value: poleCe.value,
+            pole_ce_letter: poleCe.letter,
+            pole_cx_value: poleCx.value,
+            pole_cx_letter: poleCx.letter,
+            today_state: todayState,
+            details: detailsVal,
+            priority_human: priorityUser,
+            priority_ai: priorityAi
+            ,
+            pole_ac_label: poleAcLabel,
+            pole_ce_label: poleCeLabel,
+            pole_cx_label: poleCxLabel
+          };
+          // If project fields present, record project associated with this core (pillar null)
+          const hasLegacyProj = projectAction || projectMeasure || projectStart !== null || projectTarget !== null || projectDays !== null || projectBenefit;
+          const hasNewProj = projectOutcome || projectAcceptance || projectRef;
+          if (hasLegacyProj || hasNewProj) {
+            if (!data.projects) data.projects = [];
+            data.projects.push({
+              action: projectAction || (title || belief),
+              measure: projectMeasure,
+              start: projectStart,
+              target: projectTarget,
+              days: projectDays,
+              benefit: projectBenefit,
+              priority_user: priorityUser,
+              priority_ai: priorityAi,
+              outcome: projectOutcome,
+              acceptance: projectAcceptance,
+              ref: projectRef,
+              today_state: todayState,
+              details: detailsVal,
+              pillar: null,
+              // Record project type and duration for new schema.  Default type to
+              // 'practice' if not provided but legacy fields exist.
+              type: projectType || (hasLegacyProj ? 'practice' : ''),
+              duration: durationVal
+            });
+          }
           return;
         }
         if (label.startsWith('pillar:')) {
@@ -813,6 +1614,44 @@ micro:3:3:3,Follow-up closes the loop`;
           data.pillars[idx].belief = belief;
           data.pillars[idx].confidence = confidence;
           data.pillars[idx].updated = updated;
+          data.pillars[idx].pole_ac_value = poleAc.value;
+          data.pillars[idx].pole_ac_letter = poleAc.letter;
+          data.pillars[idx].pole_ce_value = poleCe.value;
+          data.pillars[idx].pole_ce_letter = poleCe.letter;
+          data.pillars[idx].pole_cx_value = poleCx.value;
+          data.pillars[idx].pole_cx_letter = poleCx.letter;
+          // Store the raw label strings if provided for tooltips and table display
+          data.pillars[idx].pole_ac_label = poleAcLabel;
+          data.pillars[idx].pole_ce_label = poleCeLabel;
+          data.pillars[idx].pole_cx_label = poleCxLabel;
+          data.pillars[idx].today_state = todayState;
+          data.pillars[idx].details = detailsVal;
+          data.pillars[idx].priority_human = priorityUser;
+          data.pillars[idx].priority_ai = priorityAi;
+          // Capture any project fields on pillar rows
+          const hasLegacyProjP = projectAction || projectMeasure || projectStart !== null || projectTarget !== null || projectDays !== null || projectBenefit;
+          const hasNewProjP = projectOutcome || projectAcceptance || projectRef;
+          if (hasLegacyProjP || hasNewProjP) {
+            if (!data.projects) data.projects = [];
+            data.projects.push({
+              action: projectAction || (title || belief),
+              measure: projectMeasure,
+              start: projectStart,
+              target: projectTarget,
+              days: projectDays,
+              benefit: projectBenefit,
+              priority_user: priorityUser,
+              priority_ai: priorityAi,
+              outcome: projectOutcome,
+              acceptance: projectAcceptance,
+              ref: projectRef,
+              today_state: todayState,
+              details: detailsVal,
+              pillar: idx,
+              type: projectType || (hasLegacyProjP ? 'practice' : ''),
+              duration: durationVal
+            });
+          }
           return;
         }
         if (label.startsWith('sub:')) {
@@ -825,6 +1664,43 @@ micro:3:3:3,Follow-up closes the loop`;
           data.subs[p][s].belief = belief;
           data.subs[p][s].confidence = confidence;
           data.subs[p][s].updated = updated;
+          data.subs[p][s].pole_ac_value = poleAc.value;
+          data.subs[p][s].pole_ac_letter = poleAc.letter;
+          data.subs[p][s].pole_ce_value = poleCe.value;
+          data.subs[p][s].pole_ce_letter = poleCe.letter;
+          data.subs[p][s].pole_cx_value = poleCx.value;
+          data.subs[p][s].pole_cx_letter = poleCx.letter;
+          data.subs[p][s].pole_ac_label = poleAcLabel;
+          data.subs[p][s].pole_ce_label = poleCeLabel;
+          data.subs[p][s].pole_cx_label = poleCxLabel;
+          data.subs[p][s].today_state = todayState;
+          data.subs[p][s].details = detailsVal;
+          data.subs[p][s].priority_human = priorityUser;
+          data.subs[p][s].priority_ai = priorityAi;
+          // Project fields on sub rows attach to this pillar
+          const hasLegacyProjS = projectAction || projectMeasure || projectStart !== null || projectTarget !== null || projectDays !== null || projectBenefit;
+          const hasNewProjS = projectOutcome || projectAcceptance || projectRef;
+          if (hasLegacyProjS || hasNewProjS) {
+            if (!data.projects) data.projects = [];
+            data.projects.push({
+              action: projectAction || (title || belief),
+              measure: projectMeasure,
+              start: projectStart,
+              target: projectTarget,
+              days: projectDays,
+              benefit: projectBenefit,
+              priority_user: priorityUser,
+              priority_ai: priorityAi,
+              outcome: projectOutcome,
+              acceptance: projectAcceptance,
+              ref: projectRef,
+              today_state: todayState,
+              details: detailsVal,
+              pillar: p,
+              type: projectType || (hasLegacyProjS ? 'practice' : ''),
+              duration: durationVal
+            });
+          }
           return;
         }
         if (label.startsWith('micro:')) {
@@ -834,7 +1710,49 @@ micro:3:3:3,Follow-up closes the loop`;
           const m = parseInt(parts[3]);
           if (!data.micros[p]) data.micros[p] = {};
           if (!data.micros[p][s]) data.micros[p][s] = {};
-          data.micros[p][s][m] = { title: title || '', belief: belief, confidence: confidence, updated: updated };
+          data.micros[p][s][m] = {
+            title: title || '',
+            belief: belief,
+            confidence: confidence,
+            updated: updated,
+            pole_ac_value: poleAc.value,
+            pole_ac_letter: poleAc.letter,
+            pole_ce_value: poleCe.value,
+            pole_ce_letter: poleCe.letter,
+            pole_cx_value: poleCx.value,
+            pole_cx_letter: poleCx.letter,
+            pole_ac_label: poleAcLabel,
+            pole_ce_label: poleCeLabel,
+            pole_cx_label: poleCxLabel,
+            today_state: todayState,
+            details: detailsVal,
+            priority_human: priorityUser,
+            priority_ai: priorityAi
+          };
+          // Project fields on micro rows attach to this pillar
+          const hasLegacyProjM = projectAction || projectMeasure || projectStart !== null || projectTarget !== null || projectDays !== null || projectBenefit;
+          const hasNewProjM = projectOutcome || projectAcceptance || projectRef;
+          if (hasLegacyProjM || hasNewProjM) {
+            if (!data.projects) data.projects = [];
+            data.projects.push({
+              action: projectAction || (title || belief),
+              measure: projectMeasure,
+              start: projectStart,
+              target: projectTarget,
+              days: projectDays,
+              benefit: projectBenefit,
+              priority_user: priorityUser,
+              priority_ai: priorityAi,
+              outcome: projectOutcome,
+              acceptance: projectAcceptance,
+              ref: projectRef,
+              today_state: todayState,
+              details: detailsVal,
+              pillar: p,
+              type: projectType || (hasLegacyProjM ? 'practice' : ''),
+              duration: durationVal
+            });
+          }
           return;
         }
         // Lenses: any label starting with 'lens' will be treated as a lens entry.
@@ -850,7 +1768,6 @@ micro:3:3:3,Follow-up closes the loop`;
             // Attempt to parse pillars from row.pillars if present
             if (row.pillars !== undefined && row.pillars !== '') {
               const raw = String(row.pillars).trim();
-              // Split on comma or semicolon
               raw.split(/[;,]/).forEach(part => {
                 const val = parseInt(part.trim());
                 if (!isNaN(val) && val >= 1 && val <= 3) {
@@ -858,7 +1775,30 @@ micro:3:3:3,Follow-up closes the loop`;
                 }
               });
             }
-          data.lenses.push({ title: title || '', belief: belief, confidence: confidence, pillars: pillarsList, updated: updated });
+            if (!data.lenses) data.lenses = [];
+            // Assign lens index based on current count before push
+            const lensObj = {
+              title: title || '',
+              belief: belief,
+              confidence: confidence,
+              pillars: pillarsList,
+              updated: updated,
+              pole_ac_value: poleAc.value,
+              pole_ac_letter: poleAc.letter,
+              pole_ce_value: poleCe.value,
+              pole_ce_letter: poleCe.letter,
+              pole_cx_value: poleCx.value,
+              pole_cx_letter: poleCx.letter,
+              pole_ac_label: poleAcLabel,
+              pole_ce_label: poleCeLabel,
+              pole_cx_label: poleCxLabel,
+              today_state: todayState,
+              details: detailsVal,
+              priority_human: priorityUser,
+              priority_ai: priorityAi
+            };
+            lensObj.lensIndex = data.lenses.length;
+            data.lenses.push(lensObj);
           }
           return;
         }
@@ -868,15 +1808,15 @@ micro:3:3:3,Follow-up closes the loop`;
         ? ['Outer Self','Inner Self','Relationships']
         : ['Team','Revenue','Customer'];
       for (let i = 1; i <= 3; i++) {
-        if (!data.pillars[i]) data.pillars[i] = { title:'', belief: '', confidence: 50 };
+        if (!data.pillars[i]) data.pillars[i] = { title:'', belief: '', confidence: 50, updated:'', pole_ac_value:null, pole_ac_letter:null, pole_ce_value:null, pole_ce_letter:null, pole_cx_value:null, pole_cx_letter:null, pole_ac_label:'', pole_ce_label:'', pole_cx_label:'', today_state:'', details:'', priority_human:'', priority_ai:'' };
         if (!data.pillarNames[i]) data.pillarNames[i] = defaultNames[i - 1];
         if (!data.subs[i]) data.subs[i] = {};
         if (!data.micros[i]) data.micros[i] = {};
         for (let j = 1; j <= 3; j++) {
-          if (!data.subs[i][j]) data.subs[i][j] = { title:'', belief: '', confidence: 50 };
+          if (!data.subs[i][j]) data.subs[i][j] = { title:'', belief: '', confidence: 50, updated:'', pole_ac_value:null, pole_ac_letter:null, pole_ce_value:null, pole_ce_letter:null, pole_cx_value:null, pole_cx_letter:null, pole_ac_label:'', pole_ce_label:'', pole_cx_label:'', today_state:'', details:'', priority_human:'', priority_ai:'' };
           if (!data.micros[i][j]) data.micros[i][j] = {};
           for (let k = 1; k <= 3; k++) {
-            if (!data.micros[i][j][k]) data.micros[i][j][k] = { title:'', belief: '', confidence: 50 };
+            if (!data.micros[i][j][k]) data.micros[i][j][k] = { title:'', belief: '', confidence: 50, updated:'', pole_ac_value:null, pole_ac_letter:null, pole_ce_value:null, pole_ce_letter:null, pole_cx_value:null, pole_cx_letter:null, pole_ac_label:'', pole_ce_label:'', pole_cx_label:'', today_state:'', details:'', priority_human:'', priority_ai:'' };
           }
         }
       }
@@ -1007,13 +1947,23 @@ micro:3:3:3,Follow-up closes the loop`;
         pageTitle = `AIM (Aspirational Identity Map): ${modeLabel}`;
       }
       document.title = pageTitle;
-      titleBar.text(pageTitle);
+      // Update only the title text inside the span so we preserve header actions
+      const titleSpan = document.getElementById('titleText');
+      if (titleSpan) {
+        titleSpan.textContent = pageTitle;
+      } else {
+        titleBar.text(pageTitle);
+      }
       // Render legend
       updateLegend();
       // Update the lenses block in the sidebar
       updateLenses();
       // Draw the chart
       updateChart();
+      // Update the projects view if visible or precompute for later
+      if (typeof updateProjectsView === 'function') {
+        updateProjectsView();
+      }
     }
 
     /**
@@ -1062,18 +2012,35 @@ micro:3:3:3,Follow-up closes the loop`;
         container.style.alignItems = 'center';
         container.style.gap = '6px';
         container.style.cursor = 'default';
-        // Confidence dot: colour depends on heatmap state
+        // Dot colour: depends on heatmap selection
         const dot = document.createElement('span');
         dot.style.display = 'inline-block';
         dot.style.width = '10px';
         dot.style.height = '10px';
         dot.style.borderRadius = '50%';
         let color;
-        if (showConfidence) {
-          const heat = computeHeatColor((typeof lens.confidence === 'number') ? lens.confidence : 50);
+        // Determine colour based on current heatmapType
+        if (heatmapType === 'confidence') {
+          const val = (typeof lens.confidence === 'number') ? lens.confidence : 50;
+          const heat = computeHeatColor(Math.max(0, Math.min(100, val)));
+          color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
+        } else if (heatmapType === 'ac') {
+          const v = (lens.pole_ac_value !== null && lens.pole_ac_value !== undefined) ? lens.pole_ac_value : 0;
+          const mapped = ((v + 3) / 6) * 100;
+          const heat = computeHeatColor(mapped);
+          color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
+        } else if (heatmapType === 'ce') {
+          const v = (lens.pole_ce_value !== null && lens.pole_ce_value !== undefined) ? lens.pole_ce_value : 0;
+          const mapped = ((v + 3) / 6) * 100;
+          const heat = computeHeatColor(mapped);
+          color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
+        } else if (heatmapType === 'cx') {
+          const v = (lens.pole_cx_value !== null && lens.pole_cx_value !== undefined) ? lens.pole_cx_value : 0;
+          const mapped = ((v + 3) / 6) * 100;
+          const heat = computeHeatColor(mapped);
           color = `rgb(${heat[0]},${heat[1]},${heat[2]})`;
         } else {
-          // neutral grey dot when confidence heatmap is off
+          // Off: neutral grey dot
           color = '#888888';
         }
         dot.style.backgroundColor = color;
@@ -1336,7 +2303,13 @@ micro:3:3:3,Follow-up closes the loop`;
             confidence: conf,
             sub: null,
             micro: null,
-            showLabel: true
+            showLabel: true,
+            pole_ac_value: aimData.pillars[p].pole_ac_value,
+            pole_ac_letter: aimData.pillars[p].pole_ac_letter,
+            pole_ce_value: aimData.pillars[p].pole_ce_value,
+            pole_ce_letter: aimData.pillars[p].pole_ce_letter,
+            pole_cx_value: aimData.pillars[p].pole_cx_value,
+            pole_cx_letter: aimData.pillars[p].pole_cx_letter
           });
           // Subs
           for (let s = 1; s <= 3; s++) {
@@ -1358,7 +2331,13 @@ micro:3:3:3,Follow-up closes the loop`;
               label: labelSub,
               confidence: confSub,
               micro: null,
-              showLabel: false
+            showLabel: false,
+            pole_ac_value: aimData.subs[p][s].pole_ac_value,
+            pole_ac_letter: aimData.subs[p][s].pole_ac_letter,
+            pole_ce_value: aimData.subs[p][s].pole_ce_value,
+            pole_ce_letter: aimData.subs[p][s].pole_ce_letter,
+            pole_cx_value: aimData.subs[p][s].pole_cx_value,
+            pole_cx_letter: aimData.subs[p][s].pole_cx_letter
             });
             // Micros
             for (let m = 1; m <= 3; m++) {
@@ -1381,6 +2360,13 @@ micro:3:3:3,Follow-up closes the loop`;
                 label: labelMicro,
                 confidence: confMicro,
                 showLabel: false
+                ,
+                pole_ac_value: aimData.micros[p][s][m].pole_ac_value,
+                pole_ac_letter: aimData.micros[p][s][m].pole_ac_letter,
+                pole_ce_value: aimData.micros[p][s][m].pole_ce_value,
+                pole_ce_letter: aimData.micros[p][s][m].pole_ce_letter,
+                pole_cx_value: aimData.micros[p][s][m].pole_cx_value,
+                pole_cx_letter: aimData.micros[p][s][m].pole_cx_letter
               });
             }
           }
@@ -1411,7 +2397,13 @@ micro:3:3:3,Follow-up closes the loop`;
             label: labelSub,
             confidence: confSub,
             micro: null,
-            showLabel: true
+            showLabel: true,
+            pole_ac_value: aimData.subs[p][s].pole_ac_value,
+            pole_ac_letter: aimData.subs[p][s].pole_ac_letter,
+            pole_ce_value: aimData.subs[p][s].pole_ce_value,
+            pole_ce_letter: aimData.subs[p][s].pole_ce_letter,
+            pole_cx_value: aimData.subs[p][s].pole_cx_value,
+            pole_cx_letter: aimData.subs[p][s].pole_cx_letter
           });
           // Micros (3 per sub; repeated to make 9 arcs; no labels)
           for (let m = 1; m <= 3; m++) {
@@ -1435,7 +2427,13 @@ micro:3:3:3,Follow-up closes the loop`;
                 belief: beliefMicro,
                 label: labelMicro,
                 confidence: confMicro,
-                showLabel: false
+                showLabel: false,
+                pole_ac_value: aimData.micros[p][s][m].pole_ac_value,
+                pole_ac_letter: aimData.micros[p][s][m].pole_ac_letter,
+                pole_ce_value: aimData.micros[p][s][m].pole_ce_value,
+                pole_ce_letter: aimData.micros[p][s][m].pole_ce_letter,
+                pole_cx_value: aimData.micros[p][s][m].pole_cx_value,
+                pole_cx_letter: aimData.micros[p][s][m].pole_cx_letter
               });
             }
           }
@@ -1464,7 +2462,13 @@ micro:3:3:3,Follow-up closes the loop`;
             belief: beliefMicro,
             label: labelMicro,
             confidence: confMicro,
-            showLabel: true
+            showLabel: true,
+            pole_ac_value: aimData.micros[p][s][m].pole_ac_value,
+            pole_ac_letter: aimData.micros[p][s][m].pole_ac_letter,
+            pole_ce_value: aimData.micros[p][s][m].pole_ce_value,
+            pole_ce_letter: aimData.micros[p][s][m].pole_ce_letter,
+            pole_cx_value: aimData.micros[p][s][m].pole_cx_value,
+            pole_cx_letter: aimData.micros[p][s][m].pole_cx_letter
           });
         }
       }
@@ -1910,6 +2914,237 @@ micro:3:3:3,Follow-up closes the loop`;
       });
     }
 
+    // Tab switching between AIM and Projects views.  When switching to
+    // projects, update the projects list.  Only minimal styling is
+    // applied; the active tab is indicated via CSS.
+    const aimTabEl = document.getElementById('aimTab');
+    const projectsTabEl = document.getElementById('projectsTab');
+    const aimViewEl = document.getElementById('aimView');
+    const projectsViewEl = document.getElementById('projectsView');
+    if (aimTabEl && projectsTabEl && aimViewEl && projectsViewEl) {
+      aimTabEl.addEventListener('click', () => {
+        aimTabEl.classList.add('active');
+        projectsTabEl.classList.remove('active');
+        aimViewEl.style.display = '';
+        projectsViewEl.style.display = 'none';
+      });
+      projectsTabEl.addEventListener('click', () => {
+        projectsTabEl.classList.add('active');
+        aimTabEl.classList.remove('active');
+        aimViewEl.style.display = 'none';
+        projectsViewEl.style.display = '';
+        updateProjectsView();
+      });
+    }
+
+    /**
+     * Renders the projects view.  Shows up to three projects by default
+     * and exposes a button to reveal more.  Each project card displays
+     * key information such as the action name, measure, starting amount,
+     * target, days per week, benefit, and priorities.  Collapsed details
+     * can be toggled via a plus/minus button.
+     */
+    function updateProjectsView() {
+      const listEl = document.getElementById('projectsList');
+      const showMoreBtn = document.getElementById('showMoreProjectsBtn');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      if (!aimData || !Array.isArray(aimData.projects) || aimData.projects.length === 0) {
+        listEl.textContent = 'No projects.';
+        if (showMoreBtn) showMoreBtn.style.display = 'none';
+        return;
+      }
+      // Copy projects and sort them so that lower user priority values (e.g., P0)
+      // appear first.  If the priority_user is missing, assign a high
+      // numerical value.  This ensures P0 < P1 < P2, etc.  If neither
+      // priority_user nor priority_ai are provided, the order remains as defined.
+      const projects = aimData.projects.slice();
+      function parsePriority(str) {
+        if (!str) return Infinity;
+        const m = /P(\d+)/i.exec(str.trim());
+        return m ? parseInt(m[1], 10) : Infinity;
+      }
+      projects.sort((a, b) => {
+        const aPr = parsePriority(a.priority_user);
+        const bPr = parsePriority(b.priority_user);
+        if (aPr !== bPr) return aPr - bPr;
+        // Fallback to AI priority if user priorities are equal or absent
+        const aAi = parsePriority(a.priority_ai);
+        const bAi = parsePriority(b.priority_ai);
+        return aAi - bAi;
+      });
+      const maxInitial = 3;
+      const initial = projects.slice(0, maxInitial);
+      const remaining = projects.slice(maxInitial);
+      // Helper to create a project card.  Projects can be either practice or sprint
+      // type.  Practice projects show measure/start/target/days fields, while
+      // sprint projects show a duration field instead.  Each card header also
+      // includes a type badge ("Practice" or "Sprint").
+      function createProjectCard(pObj) {
+        const card = document.createElement('div');
+        card.style.border = '1px solid #cccccc';
+        card.style.borderRadius = '6px';
+        card.style.padding = '8px';
+        card.style.background = '#fafafa';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.gap = '4px';
+        // Header row includes project name and edit button
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.alignItems = 'center';
+        header.style.justifyContent = 'space-between';
+        // Project title
+        const titleEl = document.createElement('span');
+        titleEl.style.fontWeight = '600';
+        titleEl.style.fontSize = '1rem';
+        titleEl.textContent = pObj.action || pObj.outcome || pObj.benefit || '(Unnamed project)';
+        header.appendChild(titleEl);
+        // Type badge: display either Practice or Sprint based on project_type (default to Practice)
+        const typeLabel = document.createElement('span');
+        typeLabel.style.fontSize = '0.7rem';
+        typeLabel.style.fontWeight = '600';
+        typeLabel.style.marginLeft = '8px';
+        typeLabel.style.padding = '2px 6px';
+        typeLabel.style.borderRadius = '4px';
+        typeLabel.style.backgroundColor = '#e0e0e0';
+        const pType = (pObj.type || '').toLowerCase();
+        const displayType = pType === 'sprint' ? 'Sprint' : 'Practice';
+        typeLabel.textContent = displayType;
+        header.appendChild(typeLabel);
+        // Edit pencil button: clicking opens data overlay in projects tab and highlights this project row
+        const editBtn = document.createElement('button');
+        editBtn.className = 'iconButton';
+        editBtn.style.width = '24px';
+        editBtn.style.height = '24px';
+        editBtn.style.marginLeft = '4px';
+        editBtn.title = 'Edit project';
+        // Insert pencil SVG icon
+        editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/></svg>`;
+        // Determine original index of this project in aimData.projects
+        const origIndex = aimData.projects.indexOf(pObj);
+        editBtn.addEventListener('click', () => {
+          // Enable editing and open table overlay in projects tab
+          if (!editingEnabled) {
+            editingEnabled = true;
+            editNote.style.display = 'block';
+          }
+          if (tableOverlay.style.display !== 'flex') {
+            tableOverlay.style.display = 'flex';
+          }
+          currentDataTab = 'projects';
+          showDataTab('projects');
+          // Rebuild tables to ensure editing state
+          buildTableView();
+          buildProjectsTableView();
+          // Highlight the matching row in the projects table
+          setTimeout(() => {
+            const row = projectsTableBody && projectsTableBody.querySelector(`tr[data-project-index="${origIndex}"]`);
+            if (row) {
+              row.style.backgroundColor = '#fffdd0';
+              row.scrollIntoView({ block: 'center' });
+              setTimeout(() => { row.style.backgroundColor = ''; }, 2000);
+            }
+          }, 50);
+        });
+        header.appendChild(editBtn);
+        card.appendChild(header);
+        // Summary line: show outcome/benefit, user priority and type if present
+        const summary = document.createElement('div');
+        summary.style.fontSize = '0.85rem';
+        const parts = [];
+        if (pObj.outcome) parts.push(`Outcome: ${pObj.outcome}`);
+        else if (pObj.benefit) parts.push(`Benefit: ${pObj.benefit}`);
+        if (pObj.priority_user) parts.push(`User priority: ${pObj.priority_user}`);
+        // Add type to summary for quick reference
+        const typeSummary = (pObj.type || '').toLowerCase() === 'sprint' ? 'Sprint' : 'Practice';
+        parts.push(typeSummary);
+        summary.textContent = parts.join(' | ');
+        card.appendChild(summary);
+        // Details container with other fields.  For practice projects, display
+        // measure, start, target and days/week.  For sprint projects, display
+        // duration instead of practice fields.
+        const details = document.createElement('div');
+        details.style.fontSize = '0.8rem';
+        details.style.marginTop = '4px';
+        details.style.display = 'none';
+        let detailsHtml = '';
+        // Today and details
+        if (pObj.today_state) detailsHtml += `<div><strong>Today:</strong> ${pObj.today_state}</div>`;
+        if (pObj.details) detailsHtml += `<div><strong>Details:</strong> ${pObj.details}</div>`;
+        // Outcome, acceptance, reference
+        if (pObj.outcome) detailsHtml += `<div><strong>Outcome:</strong> ${pObj.outcome}</div>`;
+        if (pObj.acceptance) detailsHtml += `<div><strong>Acceptance:</strong> ${pObj.acceptance}</div>`;
+        if (pObj.ref) detailsHtml += `<div><strong>Ref:</strong> ${pObj.ref}</div>`;
+        // Benefit
+        if (pObj.benefit) detailsHtml += `<div><strong>Benefit:</strong> ${pObj.benefit}</div>`;
+        // Priorities
+        if (pObj.priority_user) detailsHtml += `<div><strong>User priority:</strong> ${pObj.priority_user}</div>`;
+        if (pObj.priority_ai) detailsHtml += `<div><strong>AI priority:</strong> ${pObj.priority_ai}</div>`;
+        // Action/measure and other numeric fields
+        // Display practice fields only if this is a practice project
+        const isSprint = (pObj.type || '').toLowerCase() === 'sprint';
+        if (!isSprint) {
+          if (pObj.action && pObj.measure) detailsHtml += `<div><strong>Measure:</strong> ${pObj.measure}</div>`;
+          if (pObj.start !== null && pObj.start !== undefined && String(pObj.start).trim() !== '') detailsHtml += `<div><strong>Start:</strong> ${pObj.start}</div>`;
+          if (pObj.target !== null && pObj.target !== undefined && String(pObj.target).trim() !== '') detailsHtml += `<div><strong>Target:</strong> ${pObj.target}</div>`;
+          if (pObj.days !== null && pObj.days !== undefined && String(pObj.days).trim() !== '') detailsHtml += `<div><strong>Days/week:</strong> ${pObj.days}</div>`;
+        } else {
+          // Sprint projects show duration instead of practice fields
+          if (pObj.duration) detailsHtml += `<div><strong>Duration:</strong> ${pObj.duration}</div>`;
+        }
+        if (detailsHtml) details.innerHTML = detailsHtml;
+        if (detailsHtml) card.appendChild(details);
+        // Toggle button to show/hide details
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'iconButton';
+        toggleBtn.style.width = '24px';
+        toggleBtn.style.height = '24px';
+        toggleBtn.textContent = '+';
+        toggleBtn.addEventListener('click', () => {
+          if (details && details.style.display === 'none') {
+            details.style.display = '';
+            toggleBtn.textContent = '–';
+          } else {
+            if (details) details.style.display = 'none';
+            toggleBtn.textContent = '+';
+          }
+        });
+        card.appendChild(toggleBtn);
+        return card;
+      }
+      // Render initial projects
+      initial.forEach(p => {
+        const card = createProjectCard(p);
+        listEl.appendChild(card);
+      });
+      // Setup show more/less buttons
+      const showLessBtn = document.getElementById('showLessProjectsBtn');
+      if (showMoreBtn && showLessBtn) {
+        if (remaining.length > 0) {
+          showMoreBtn.style.display = '';
+          showLessBtn.style.display = 'none';
+          showMoreBtn.onclick = () => {
+            // Render the remaining projects
+            remaining.forEach(p => {
+              const card = createProjectCard(p);
+              listEl.appendChild(card);
+            });
+            showMoreBtn.style.display = 'none';
+            showLessBtn.style.display = '';
+          };
+          showLessBtn.onclick = () => {
+            // Re-render collapsed view
+            updateProjectsView();
+            // After re-rendering, hide showLess and show showMore
+          };
+        } else {
+          showMoreBtn.style.display = 'none';
+          showLessBtn.style.display = 'none';
+        }
+      }
+    }
+
     /**
      * Adds an invisible disc over the centre of the chart so that the
      * core/pillar/sub belief can show a tooltip on hover.  The disc’s
@@ -1968,7 +3203,7 @@ micro:3:3:3,Follow-up closes the loop`;
       // Determine if this is a lens tooltip by checking for a pillars array and absence of hierarchical indices
       const isLens = d.hasOwnProperty('pillars') && !d.hasOwnProperty('pillar');
       if (isLens) {
-        // Lens tooltip: show full lens text, pillar attachments and confidence
+        // Lens tooltip: show full lens text, pillar attachments and details in a structured layout
         const lensText = d.belief || '';
         html += `<div style="font-size:15px; font-weight:600; margin-bottom:4px;">${lensText}</div>`;
         // Associated pillars names
@@ -1978,18 +3213,34 @@ micro:3:3:3,Follow-up closes the loop`;
             html += `<div style="font-size:12px; color:#555; margin-bottom:2px;">↳ Applies to: ${names.join(', ')}</div>`;
           }
         }
-        // Alignment (confidence) line (if available)
-        if (typeof d.confidence === 'number') {
-          const alignLabel = getAlignmentLabel(d.confidence);
-          html += `<div style="font-size:12px; color:#777;">Alignment: ${alignLabel} (${d.confidence}%)</div>`;
-        }
-        // Last updated date if available
+        // Collect numeric alignment and label values
+        const confVal = (typeof d.confidence === 'number' && !isNaN(d.confidence)) ? d.confidence : null;
+        const alignLabel = (confVal !== null) ? getAlignmentLabel(confVal) : '';
+        // Determine pole phrases: use provided labels if available; otherwise compute from value/letter
+        const acPhrase = d.pole_ac_label && d.pole_ac_label !== '' ? d.pole_ac_label : getPolePhrase(d.pole_ac_value, d.pole_ac_letter, 'ac');
+        const cePhrase = d.pole_ce_label && d.pole_ce_label !== '' ? d.pole_ce_label : getPolePhrase(d.pole_ce_value, d.pole_ce_letter, 'ce');
+        const cxPhrase = d.pole_cx_label && d.pole_cx_label !== '' ? d.pole_cx_label : getPolePhrase(d.pole_cx_value, d.pole_cx_letter, 'cx');
+        // Determine whether to show each row: show if there is a score, letter, or explicit label.
+        const hasAc = (d.pole_ac_value !== null && d.pole_ac_value !== undefined) || (d.pole_ac_letter) || (d.pole_ac_label && d.pole_ac_label !== '');
+        const hasCe = (d.pole_ce_value !== null && d.pole_ce_value !== undefined) || (d.pole_ce_letter) || (d.pole_ce_label && d.pole_ce_label !== '');
+        const hasCx = (d.pole_cx_value !== null && d.pole_cx_value !== undefined) || (d.pole_cx_letter) || (d.pole_cx_label && d.pole_cx_label !== '');
+        // Format last updated
+        let lastUpd = '';
         if (d.updated) {
-          const upd = formatDateString(d.updated);
-          if (upd) {
-            html += `<div style="font-size:11px; color:#777;">Last updated: ${upd}</div>`;
-          }
+          const formatted = formatDateString(d.updated);
+          if (formatted) lastUpd = formatted;
         }
+        // Build a small table for the metadata for readability
+        html += `<div style="margin-top:4px; font-size:11.5px; color:#555;">
+        <table style="border-collapse:collapse; width:100%;">
+          ${confVal !== null ? `<tr><td style="padding:0 4px 2px 0;">Alignment:</td><td style="padding:0 0 2px 0; text-align:right;">${alignLabel} (${confVal}%)</td></tr>` : ''}
+          ${hasAc ? `<tr><td style="padding:0 4px 2px 0;">Adaptive:</td><td style="padding:0 0 2px 0; text-align:right;">${acPhrase || 'balanced'}</td></tr>` : ''}
+          ${hasCe ? `<tr><td style="padding:0 4px 2px 0;">Celebration:</td><td style="padding:0 0 2px 0; text-align:right;">${cePhrase || 'balanced'}</td></tr>` : ''}
+          ${hasCx ? `<tr><td style="padding:0 4px 2px 0;">Collective experience:</td><td style="padding:0 0 2px 0; text-align:right;">${cxPhrase || 'balanced'}</td></tr>` : ''}
+          ${lastUpd ? `<tr><td style="padding:0 4px 0 0;">Last updated:</td><td style="padding:0; text-align:right;">${lastUpd}</td></tr>` : ''}
+        </table>
+        </div>`;
+        // Editing disabled in lens tooltips
       } else {
         // Arc tooltip: show the hovered belief and its parent only
         // Determine current and parent levels
@@ -2034,28 +3285,36 @@ micro:3:3:3,Follow-up closes the loop`;
           // include an arrow to visually indicate support relationship
           html += `<div style="font-size:14px; color:#555;">↳ <strong>${parentLabel}:</strong> ${parentText}</div>`;
         }
-        // Append alignment at the bottom
-        if (typeof confValue === 'number') {
-          const alignLabel = getAlignmentLabel(confValue);
-          html += `<div style="font-size:12px; color:#777; margin-top:2px;">Alignment: ${alignLabel} (${confValue}%)</div>`;
-        }
-        // Append last updated date if available
-        let updStr = '';
+        // Gather metadata for the current item
+        let curObj;
         if (d.micro) {
-          updStr = aimData.micros[d.pillar][d.sub][d.micro].updated || '';
+          curObj = aimData.micros[d.pillar][d.sub][d.micro];
         } else if (d.sub) {
-          updStr = aimData.subs[d.pillar][d.sub].updated || '';
+          curObj = aimData.subs[d.pillar][d.sub];
         } else if (d.pillar) {
-          updStr = aimData.pillars[d.pillar].updated || '';
+          curObj = aimData.pillars[d.pillar];
         } else {
-          updStr = aimData.core.updated || '';
+          curObj = aimData.core;
         }
-        if (updStr) {
-          const updFmt = formatDateString(updStr);
-          if (updFmt) {
-            html += `<div style="font-size:11px; color:#777;">Last updated: ${updFmt}</div>`;
-          }
-        }
+        const curConf = curObj && typeof curObj.confidence === 'number' ? curObj.confidence : null;
+        const curAlignLabel = curConf !== null ? getAlignmentLabel(curConf) : '';
+        const acLab = curObj && curObj.pole_ac_label && curObj.pole_ac_label !== '' ? curObj.pole_ac_label : getPolePhrase(curObj.pole_ac_value, curObj.pole_ac_letter, 'ac');
+        const ceLab = curObj && curObj.pole_ce_label && curObj.pole_ce_label !== '' ? curObj.pole_ce_label : getPolePhrase(curObj.pole_ce_value, curObj.pole_ce_letter, 'ce');
+        const cxLab = curObj && curObj.pole_cx_label && curObj.pole_cx_label !== '' ? curObj.pole_cx_label : getPolePhrase(curObj.pole_cx_value, curObj.pole_cx_letter, 'cx');
+        // Determine whether to show each row for the current belief.
+        const hasAcArc = curObj && ((curObj.pole_ac_value !== null && curObj.pole_ac_value !== undefined) || curObj.pole_ac_letter || (curObj.pole_ac_label && curObj.pole_ac_label !== ''));
+        const hasCeArc = curObj && ((curObj.pole_ce_value !== null && curObj.pole_ce_value !== undefined) || curObj.pole_ce_letter || (curObj.pole_ce_label && curObj.pole_ce_label !== ''));
+        const hasCxArc = curObj && ((curObj.pole_cx_value !== null && curObj.pole_cx_value !== undefined) || curObj.pole_cx_letter || (curObj.pole_cx_label && curObj.pole_cx_label !== ''));
+        const upd = curObj && curObj.updated ? formatDateString(curObj.updated) : '';
+        // Build metadata table
+        html += `<div style="border-top:1px solid #e0e0e0; padding-top:4px; margin-top:6px; font-size:11.5px; color:#555;"><table style="border-collapse:collapse; width:100%;">
+          ${curConf !== null ? `<tr><td style="padding:0 4px 2px 0;">Alignment:</td><td style="padding:0 0 2px 0; text-align:right;">${curAlignLabel} (${curConf}%)</td></tr>` : ''}
+          ${hasAcArc ? `<tr><td style="padding:0 4px 2px 0;">Adaptive:</td><td style="padding:0 0 2px 0; text-align:right;">${acLab || 'balanced'}</td></tr>` : ''}
+          ${hasCeArc ? `<tr><td style="padding:0 4px 2px 0;">Celebration:</td><td style="padding:0 0 2px 0; text-align:right;">${ceLab || 'balanced'}</td></tr>` : ''}
+          ${hasCxArc ? `<tr><td style="padding:0 4px 2px 0;">Collective experience:</td><td style="padding:0 0 2px 0; text-align:right;">${cxLab || 'balanced'}</td></tr>` : ''}
+          ${upd ? `<tr><td style="padding:0 4px 0 0;">Last updated:</td><td style="padding:0; text-align:right;">${upd}</td></tr>` : ''}
+        </table></div>`;
+        // Editing disabled in belief tooltips
       }
       tooltip.html(html);
       moveTooltip(event);
@@ -2087,6 +3346,70 @@ micro:3:3:3,Follow-up closes the loop`;
     /** Hides the tooltip. */
     function hideTooltip() {
       tooltip.style('display','none');
+    }
+
+    // Tooltip edit handler: listen for clicks on the pencil icons within the tooltip.
+    // This allows users to open the data view and edit the corresponding belief or lens directly.
+    const tooltipDom = tooltip.node();
+    if (tooltipDom) {
+      tooltipDom.addEventListener('click', (event) => {
+        const btn = event.target.closest('.tooltipEditButton');
+        if (!btn) return;
+        // Determine type (lens or belief) and indices from data attributes
+        const type = btn.getAttribute('data-type');
+        if (!type) return;
+        // Ensure editing is enabled and show table overlay
+        if (!editingEnabled) {
+          editingEnabled = true;
+          // Show edit note
+          editNote.style.display = 'block';
+        }
+        // Open the table overlay if not already visible
+        if (tableOverlay.style.display !== 'flex') {
+          // show the overlay and set active tab
+          tableOverlay.style.display = 'flex';
+        }
+        // Determine which data tab to open (beliefs tab for lenses and beliefs; projects tab for projects)
+        // For beliefs and lenses, switch to AIM tab
+        currentDataTab = 'aim';
+        showDataTab('aim');
+        // Rebuild tables to ensure editing fields are enabled
+        buildTableView();
+        buildProjectsTableView();
+        // Identify the row to highlight
+        let matchRowSelector = null;
+        if (type === 'lens') {
+          const lensIdx = btn.getAttribute('data-index');
+          if (lensIdx !== null && lensIdx !== '') {
+            matchRowSelector = `tr[data-depth="Lens"][data-lensIndex="${lensIdx}"]`;
+          }
+        } else {
+          // belief: use data-pill, data-sub, data-micro attributes
+          const p = btn.getAttribute('data-pill') || '';
+          const s = btn.getAttribute('data-sub') || '';
+          const m = btn.getAttribute('data-micro') || '';
+          // Build selector that matches row attributes
+          matchRowSelector = `tr[data-depth][data-pillar="${p ? aimData.pillarNames[p] || '' : ''}"]`;
+          // For sub rows, dataset.pillar is name; dataset.depth is 'Sub', dataset.micro or dataset.sub not stored; we cannot easily match sub or micro names here.
+          // Therefore search by pillar name only. We'll highlight the first matching row.
+        }
+        // Highlight the matching row if found
+        if (matchRowSelector) {
+          setTimeout(() => {
+            const row = tableBody.querySelector(matchRowSelector);
+            if (row) {
+              // Add highlight class
+              row.style.backgroundColor = '#fffdd0';
+              // Scroll into view
+              row.scrollIntoView({ block: 'center' });
+              // Remove highlight after a delay
+              setTimeout(() => {
+                row.style.backgroundColor = '';
+              }, 2000);
+            }
+          }, 50);
+        }
+      });
     }
 
     /**
@@ -2175,7 +3498,9 @@ micro:3:3:3,Follow-up closes the loop`;
         if (a.micro !== b.micro) return (a.micro || 0) - (b.micro || 0);
         return 0;
       });
-      // Populate table body with nine columns: Depth, Pillar, Sub, Micro, Title, Belief, Confidence, Last updated, Applies to
+      // Populate table body with twelve columns:
+      // Depth, Pillar, Sub, Micro, Title, Belief, Confidence, Last updated,
+      // Adaptive (poll), Celebration (poll), Collective (poll), Applies to
       tableBody.innerHTML = '';
       // Build filter options: gather unique pillar names and lens titles
       const filterSelect = document.getElementById('tableFilterSelect');
@@ -2231,6 +3556,108 @@ micro:3:3:3,Follow-up closes the loop`;
         }
         // Applies text
         const appliesText = (r.applies !== undefined ? r.applies : '');
+        // Lookup today and details values for this row.
+        let todayCell = '';
+        let detailsCell = '';
+        if (r.depth === 0) {
+          todayCell = aimData.core.today_state || '';
+          detailsCell = aimData.core.details || '';
+        } else if (r.depth === 1) {
+          const p = r.pillar;
+          if (aimData.pillars[p]) {
+            todayCell = aimData.pillars[p].today_state || '';
+            detailsCell = aimData.pillars[p].details || '';
+          }
+        } else if (r.depth === 2) {
+          const p = r.pillar;
+          const s = r.sub;
+          if (aimData.subs[p] && aimData.subs[p][s]) {
+            todayCell = aimData.subs[p][s].today_state || '';
+            detailsCell = aimData.subs[p][s].details || '';
+          }
+        } else if (r.depth === 3) {
+          const p = r.pillar;
+          const s = r.sub;
+          const m = r.micro;
+          if (aimData.micros[p] && aimData.micros[p][s] && aimData.micros[p][s][m]) {
+            todayCell = aimData.micros[p][s][m].today_state || '';
+            detailsCell = aimData.micros[p][s][m].details || '';
+          }
+        } else if (r.depth === 4) {
+          const lensObj = aimData.lenses[r.lensIndex];
+          if (lensObj) {
+            todayCell = lensObj.today_state || '';
+            detailsCell = lensObj.details || '';
+          }
+        }
+        // Compute segmentation pole phrases or use provided labels.
+        let adaptiveCell = '';
+        let celebrationCell = '';
+        let collectiveCell = '';
+        // Helper to compute a phrase: use explicit label if provided; otherwise compute using getPolePhrase.
+        function computePhrase(obj, type) {
+          if (!obj) return '';
+          let lbl;
+          if (type === 'ac') lbl = obj.pole_ac_label;
+          else if (type === 'ce') lbl = obj.pole_ce_label;
+          else if (type === 'cx') lbl = obj.pole_cx_label;
+          if (lbl && lbl !== '') return lbl;
+          // Otherwise compute phrase from value/letter
+          const val = type === 'ac' ? obj.pole_ac_value : type === 'ce' ? obj.pole_ce_value : obj.pole_cx_value;
+          const lettr = type === 'ac' ? obj.pole_ac_letter : type === 'ce' ? obj.pole_ce_letter : obj.pole_cx_letter;
+          // Determine orientation letter; if missing, use the default right‑side letter for this pole
+          let letterForPhrase = lettr;
+          if (!letterForPhrase || letterForPhrase === '') {
+            const defaults = { ac: 'G', ce: 'P', cx: 'S' };
+            letterForPhrase = defaults[type] || '';
+          }
+          const phrase = getPolePhrase(val, letterForPhrase, type);
+          if (phrase && phrase.trim() !== '') return phrase;
+          // If value exists but phrase empty, default to balanced
+          if (val !== null && val !== undefined) return 'balanced';
+          return '';
+        }
+        if (r.depth === 0) {
+          // core
+          adaptiveCell = computePhrase(aimData.core, 'ac');
+          celebrationCell = computePhrase(aimData.core, 'ce');
+          collectiveCell = computePhrase(aimData.core, 'cx');
+        } else if (r.depth === 1) {
+          const p = r.pillar;
+          if (aimData.pillars[p]) {
+            const obj = aimData.pillars[p];
+            adaptiveCell = computePhrase(obj, 'ac');
+            celebrationCell = computePhrase(obj, 'ce');
+            collectiveCell = computePhrase(obj, 'cx');
+          }
+        } else if (r.depth === 2) {
+          const p = r.pillar;
+          const s = r.sub;
+          if (aimData.subs[p] && aimData.subs[p][s]) {
+            const obj = aimData.subs[p][s];
+            adaptiveCell = computePhrase(obj, 'ac');
+            celebrationCell = computePhrase(obj, 'ce');
+            collectiveCell = computePhrase(obj, 'cx');
+          }
+        } else if (r.depth === 3) {
+          const p = r.pillar;
+          const s = r.sub;
+          const m = r.micro;
+          if (aimData.micros[p] && aimData.micros[p][s] && aimData.micros[p][s][m]) {
+            const obj = aimData.micros[p][s][m];
+            adaptiveCell = computePhrase(obj, 'ac');
+            celebrationCell = computePhrase(obj, 'ce');
+            collectiveCell = computePhrase(obj, 'cx');
+          }
+        } else if (r.depth === 4) {
+          // lens row
+          const lensObj = aimData.lenses[r.lensIndex];
+          if (lensObj) {
+            adaptiveCell = computePhrase(lensObj, 'ac');
+            celebrationCell = computePhrase(lensObj, 'ce');
+            collectiveCell = computePhrase(lensObj, 'cx');
+          }
+        }
         // Build row
         const tr = document.createElement('tr');
         // Attach dataset attributes for filtering
@@ -2250,7 +3677,12 @@ micro:3:3:3,Follow-up closes the loop`;
           `<td>${r.belief}</td>` +
           `<td>${editingEnabled ? ((typeof r.confidence === 'number' && !isNaN(r.confidence)) ? r.confidence : '') : alignCell}</td>` +
           `<td>${updatedCell}</td>` +
-          `<td>${appliesText}</td>`;
+          `<td>${adaptiveCell}</td>` +
+          `<td>${celebrationCell}</td>` +
+          `<td>${collectiveCell}</td>` +
+          `<td>${appliesText}</td>` +
+          `<td>${todayCell}</td>` +
+          `<td>${detailsCell}</td>`;
         // If editing is enabled, make certain cells editable and provide controls
         if (editingEnabled) {
           const cells = tr.children;
@@ -2322,8 +3754,13 @@ micro:3:3:3,Follow-up closes the loop`;
             updateLegend();
             updateLenses();
           });
-          // Applies cell (index 8) for lens rows: multi-select input
-          const appliesTdEdit = cells[8];
+          // Applies cell (index 11) for lens rows: multi-select input
+          const appliesTdEdit = cells[11];
+          // Today cell (index 12)
+          const todayTd = cells[12];
+          // Details cell (index 13)
+          const detailsTd = cells[13];
+          // For lens rows, render applies as a multi-select dropdown
           if (r.depth === 4) {
             appliesTdEdit.innerHTML = '';
             const select = document.createElement('select');
@@ -2344,11 +3781,45 @@ micro:3:3:3,Follow-up closes the loop`;
               aimData.lenses[r.lensIndex].pillars = selected;
               r.applies = selected.map(p => aimData.pillarNames[p] || '').join(', ');
               tr.dataset.applies = r.applies;
+              // update the applies cell text to reflect selection
               appliesTdEdit.textContent = r.applies;
               updateLenses();
             });
             appliesTdEdit.appendChild(select);
           }
+          // Editable Today and Details cells for all rows
+          todayTd.contentEditable = true;
+          todayTd.style.backgroundColor = '#fff8e1';
+          todayTd.addEventListener('blur', () => {
+            const newVal = todayTd.textContent.trim();
+            if (r.depth === 4) {
+              aimData.lenses[r.lensIndex].today_state = newVal;
+            } else if (r.depth === 0) {
+              aimData.core.today_state = newVal;
+            } else if (r.depth === 1) {
+              aimData.pillars[r.pillar].today_state = newVal;
+            } else if (r.depth === 2) {
+              aimData.subs[r.pillar][r.sub].today_state = newVal;
+            } else if (r.depth === 3) {
+              aimData.micros[r.pillar][r.sub][r.micro].today_state = newVal;
+            }
+          });
+          detailsTd.contentEditable = true;
+          detailsTd.style.backgroundColor = '#fff8e1';
+          detailsTd.addEventListener('blur', () => {
+            const newVal = detailsTd.textContent.trim();
+            if (r.depth === 4) {
+              aimData.lenses[r.lensIndex].details = newVal;
+            } else if (r.depth === 0) {
+              aimData.core.details = newVal;
+            } else if (r.depth === 1) {
+              aimData.pillars[r.pillar].details = newVal;
+            } else if (r.depth === 2) {
+              aimData.subs[r.pillar][r.sub].details = newVal;
+            } else if (r.depth === 3) {
+              aimData.micros[r.pillar][r.sub][r.micro].details = newVal;
+            }
+          });
         }
         tableBody.appendChild(tr);
       });
@@ -2376,48 +3847,79 @@ micro:3:3:3,Follow-up closes the loop`;
      * include the search term (case‑insensitive) remain visible.
      */
     function filterTable(search) {
-      const trs = tableBody.querySelectorAll('tr');
+      // Determine which table rows to filter based on currentDataTab
+      let trs;
+      if (currentDataTab === 'projects') {
+        trs = projectsTableBody ? projectsTableBody.querySelectorAll('tr') : [];
+      } else {
+        trs = tableBody.querySelectorAll('tr');
+      }
       const filterSelect = document.getElementById('tableFilterSelect');
-      const filterVal = filterSelect ? filterSelect.value : 'all';
+      // Determine the selected filter.  For both beliefs and projects, allow pillar filtering.  Lens filters only apply on beliefs.
+      let filterVal = 'all';
+      if (filterSelect) {
+        filterVal = filterSelect.value || 'all';
+      }
       trs.forEach(tr => {
         // search both title and belief columns (indexes 4 and 5)
-        const title = tr.children[4] ? tr.children[4].textContent.toLowerCase() : '';
-        const belief = tr.children[5] ? tr.children[5].textContent.toLowerCase() : '';
-        // search condition
         let searchOk = true;
-        if (search && search.length > 0) {
-          searchOk = (title.indexOf(search) !== -1 || belief.indexOf(search) !== -1);
-        }
-        // filter condition
-        let filterOk = true;
-        if (filterVal && filterVal !== 'all') {
-          if (filterVal.startsWith('pillar:')) {
-            const name = filterVal.slice(7);
-            const rowPillar = tr.dataset.pillar || '';
-            const rowApplies = tr.dataset.applies || '';
-            // Show if row pillar matches or row is a lens with applies containing name
-            if (rowPillar !== name) {
-              // not same pillar; check if lens applies to pillar
-              if (!tr.dataset.depth || tr.dataset.depth !== 'Lens' || rowApplies.indexOf(name) === -1) {
+        if (currentDataTab === 'projects') {
+          // For projects, search across all cell text
+          const rowText = tr.textContent.toLowerCase();
+          if (search && search.length > 0) {
+            searchOk = rowText.indexOf(search) !== -1;
+          }
+          // Apply pillar filter for projects
+          let filterOk = true;
+          if (filterVal && filterVal !== 'all') {
+            if (filterVal.startsWith('pillar:')) {
+              const name = filterVal.slice(7);
+              const rowPillar = tr.dataset.pillar || '';
+              if (rowPillar !== name) {
                 filterOk = false;
               }
             }
-          } else if (filterVal === 'lens') {
-            // Show only lens rows when 'Lenses' filter selected
-            if (!tr.dataset.depth || tr.dataset.depth !== 'Lens') {
-              filterOk = false;
-            }
-          } else if (filterVal.startsWith('lens:')) {
-            // Legacy support: treat lens:Title same as lens filter
-            if (!tr.dataset.depth || tr.dataset.depth !== 'Lens') {
-              filterOk = false;
+            // Lens filter is ignored on projects
+          }
+          tr.style.display = (searchOk && filterOk) ? '' : 'none';
+        } else {
+          // For AIM, search title and belief columns (indexes 4 and 5)
+          const title = tr.children[4] ? tr.children[4].textContent.toLowerCase() : '';
+          const belief = tr.children[5] ? tr.children[5].textContent.toLowerCase() : '';
+          if (search && search.length > 0) {
+            searchOk = (title.indexOf(search) !== -1 || belief.indexOf(search) !== -1);
+          }
+          // filter condition
+          let filterOk = true;
+          if (filterVal && filterVal !== 'all') {
+            if (filterVal.startsWith('pillar:')) {
+              const name = filterVal.slice(7);
+              const rowPillar = tr.dataset.pillar || '';
+              const rowApplies = tr.dataset.applies || '';
+              // Show if row pillar matches or row is a lens with applies containing name
+              if (rowPillar !== name) {
+                // not same pillar; check if lens applies to pillar
+                if (!tr.dataset.depth || tr.dataset.depth !== 'Lens' || rowApplies.indexOf(name) === -1) {
+                  filterOk = false;
+                }
+              }
+            } else if (filterVal === 'lens') {
+              // Show only lens rows when 'Lenses' filter selected
+              if (!tr.dataset.depth || tr.dataset.depth !== 'Lens') {
+                filterOk = false;
+              }
+            } else if (filterVal.startsWith('lens:')) {
+              // Legacy support: treat lens:Title same as lens filter
+              if (!tr.dataset.depth || tr.dataset.depth !== 'Lens') {
+                filterOk = false;
+              }
             }
           }
-        }
-        if (searchOk && filterOk) {
-          tr.style.display = '';
-        } else {
-          tr.style.display = 'none';
+          if (searchOk && filterOk) {
+            tr.style.display = '';
+          } else {
+            tr.style.display = 'none';
+          }
         }
       });
     }
