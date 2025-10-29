@@ -70,22 +70,27 @@
       display: flex;
       gap: 8px;
       margin-bottom: 12px;
-    }
+      margin-top: 8px;
+  padding-left: 12px;
+}
     .tabButton {
-      padding: 4px 10px;
-      border-radius: 4px;
-      background: #f5f5f5;
-      border: 1px solid #cccccc;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: #eaf5f6;
+      border: 1px solid #b7dfe1;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
+      color: #2a4d55;
+      transition: background 0.2s ease, border-color 0.2s ease;
     }
     .tabButton.active {
       background: #ffffff;
-      border-color: #999999;
+      border-color: #88c6cb;
       font-weight: 600;
+      color: #1d3940;
     }
     .tabButton:hover {
-      background: #efefef;
+      background: #dff1f2;
     }
 
     /* Heatmap select styling */
@@ -250,7 +255,9 @@
     svg .wedge:focus {
       outline: none;
     }
-  </style>
+  
+#projectsList .iconButton[title="Edit project"]{ display:none !important; }
+</style>
 </head>
 <body>
   <header id="titleBar" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding-right:16px;">
@@ -826,20 +833,34 @@
         buildProjectsTableView();
         updateProjectsView();
       }, true));
-      // Type (Practice or Sprint)
-      const typeVal = (proj.type || '').toLowerCase() === 'sprint' ? 'Sprint' : (proj.type ? 'Practice' : '');
-      tr.appendChild(createCell(typeVal, () => {
-        // Allow editing of type by entering 'practice' or 'sprint'
-        const val = tr.children[1].textContent.trim();
-        // Normalise input
-        const lower = val.toLowerCase();
-        if (lower === 'sprint' || lower === 'practice') {
-          proj.type = lower;
-        }
-        buildProjectsTableView();
-        updateProjectsView();
-      }, true));
-      const isSprintRow = (proj.type || '').toLowerCase() === 'sprint';
+      
+// Type (Practice or Sprint) — dropdown when editing is enabled
+(function(){
+  const td = document.createElement('td');
+  if (editingEnabled) {
+    const select = document.createElement('select');
+    const opts = ['Practice','Sprint'];
+    opts.forEach(lbl => {
+      const opt = document.createElement('option');
+      opt.value = lbl.toLowerCase();
+      opt.textContent = lbl;
+      select.appendChild(opt);
+    });
+    select.value = (proj.type || '').toLowerCase() === 'sprint' ? 'sprint' : 'practice';
+    select.addEventListener('change', () => {
+      proj.type = select.value;
+      buildProjectsTableView();
+      updateProjectsView();
+    });
+    td.appendChild(select);
+    td.style.backgroundColor = '#fff8e1';
+  } else {
+    td.textContent = (proj.type || '').toLowerCase() === 'sprint' ? 'Sprint' : (proj.type ? 'Practice' : '');
+  }
+  tr.appendChild(td);
+})();
+const isSprintRow = (proj.type || '').toLowerCase() === 'sprint';
+
       // Measure
       tr.appendChild(createCell(isSprintRow ? '' : (proj.measure || ''), () => {
         proj.measure = tr.children[2].textContent.trim();
@@ -2999,20 +3020,20 @@ micro:3:3:3,Follow-up closes the loop`;
         titleEl.style.fontWeight = '600';
         titleEl.style.fontSize = '1rem';
         titleEl.textContent = pObj.action || pObj.outcome || pObj.benefit || '(Unnamed project)';
-        header.appendChild(titleEl);
         // Type badge: display either Practice or Sprint based on project_type (default to Practice)
         const typeLabel = document.createElement('span');
         typeLabel.style.fontSize = '0.7rem';
         typeLabel.style.fontWeight = '600';
-        typeLabel.style.marginLeft = '8px';
         typeLabel.style.padding = '2px 6px';
         typeLabel.style.borderRadius = '4px';
         typeLabel.style.backgroundColor = '#e0e0e0';
+        // fixed width to align badges across cards
+        typeLabel.style.minWidth = '58px';
+        typeLabel.style.textAlign = 'center';
         const pType = (pObj.type || '').toLowerCase();
         const displayType = pType === 'sprint' ? 'Sprint' : 'Practice';
         typeLabel.textContent = displayType;
-        header.appendChild(typeLabel);
-        // Edit pencil button: clicking opens data overlay in projects tab and highlights this project row
+        // Edit pencil button: clicking enters inline edit mode for this project
         const editBtn = document.createElement('button');
         editBtn.className = 'iconButton';
         editBtn.style.width = '24px';
@@ -3023,42 +3044,29 @@ micro:3:3:3,Follow-up closes the loop`;
         editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/></svg>`;
         // Determine original index of this project in aimData.projects
         const origIndex = aimData.projects.indexOf(pObj);
-        editBtn.addEventListener('click', () => {
-          // Enable editing and open table overlay in projects tab
-          if (!editingEnabled) {
-            editingEnabled = true;
-            editNote.style.display = 'block';
-          }
-          if (tableOverlay.style.display !== 'flex') {
-            tableOverlay.style.display = 'flex';
-          }
-          currentDataTab = 'projects';
-          showDataTab('projects');
-          // Rebuild tables to ensure editing state
-          buildTableView();
-          buildProjectsTableView();
-          // Highlight the matching row in the projects table
-          setTimeout(() => {
-            const row = projectsTableBody && projectsTableBody.querySelector(`tr[data-project-index="${origIndex}"]`);
-            if (row) {
-              row.style.backgroundColor = '#fffdd0';
-              row.scrollIntoView({ block: 'center' });
-              setTimeout(() => { row.style.backgroundColor = ''; }, 2000);
-            }
-          }, 50);
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Inline editing: convert this card into an editable form
+          startProjectInlineEdit(card, pObj, origIndex);
         });
-        header.appendChild(editBtn);
+        // Create a right section to hold the type label and pencil, aligning them together
+        const rightSection = document.createElement('div');
+        rightSection.style.display = 'flex';
+        rightSection.style.alignItems = 'center';
+        rightSection.style.gap = '6px';
+        rightSection.appendChild(typeLabel);
+        rightSection.appendChild(editBtn);
+        // Build header with two items: title on left, rightSection on right
+        header.appendChild(titleEl);
+        header.appendChild(rightSection);
         card.appendChild(header);
-        // Summary line: show outcome/benefit, user priority and type if present
+        // Summary line: show outcome/benefit and user priority.  The project type is indicated via the badge on the right, so we omit it here.
         const summary = document.createElement('div');
         summary.style.fontSize = '0.85rem';
         const parts = [];
         if (pObj.outcome) parts.push(`Outcome: ${pObj.outcome}`);
         else if (pObj.benefit) parts.push(`Benefit: ${pObj.benefit}`);
         if (pObj.priority_user) parts.push(`User priority: ${pObj.priority_user}`);
-        // Add type to summary for quick reference
-        const typeSummary = (pObj.type || '').toLowerCase() === 'sprint' ? 'Sprint' : 'Practice';
-        parts.push(typeSummary);
         summary.textContent = parts.join(' | ');
         card.appendChild(summary);
         // Details container with other fields.  For practice projects, display
@@ -3854,6 +3862,203 @@ micro:3:3:3,Follow-up closes the loop`;
       } else {
         trs = tableBody.querySelectorAll('tr');
       }
+
+    /**
+     * Enter inline editing mode for a given project card.  This replaces the
+     * card’s contents with editable fields and Save/Cancel buttons.  When
+     * saving, the project object is updated in aimData.projects and the view
+     * is refreshed.  Canceling discards changes and restores the original
+     * view.
+     *
+     * @param {HTMLElement} card The project card DOM element to edit
+     * @param {Object} project The project object to modify
+     * @param {number} index Index of the project in aimData.projects
+     */
+    function startProjectInlineEdit(card, project, index) {
+      if (!card || !project) return;
+      // Prevent multiple edits on the same card
+      if (card.dataset.editing === 'true') return;
+      card.dataset.editing = 'true';
+      // Clear card content and highlight editing state
+      card.innerHTML = '';
+      card.style.background = '#fffde6';
+      card.style.borderColor = '#ffd27f';
+      // Container for edit form
+      const form = document.createElement('div');
+      form.style.display = 'flex';
+      form.style.flexDirection = 'column';
+      form.style.gap = '6px';
+      // Helper to create label/input row
+      function createRow(labelText, value, multiline = false) {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '6px';
+        const label = document.createElement('span');
+        label.style.fontWeight = '600';
+        label.style.minWidth = '100px';
+        label.textContent = labelText;
+        let input;
+        if (multiline) {
+          input = document.createElement('textarea');
+          input.rows = 2;
+          input.style.resize = 'vertical';
+        } else {
+          input = document.createElement('input');
+          input.type = 'text';
+        }
+        input.value = value || '';
+        input.style.flex = '1';
+        input.style.padding = '4px';
+        input.style.border = '1px solid #ccc';
+        input.style.borderRadius = '4px';
+        row.appendChild(label);
+        row.appendChild(input);
+        return { row, input };
+      }
+      // Name/Action field
+      const nameField = createRow('Name', project.action || project.outcome || project.benefit || '');
+      form.appendChild(nameField.row);
+      // Type select
+      const typeRow = document.createElement('div');
+      typeRow.style.display = 'flex';
+      typeRow.style.alignItems = 'center';
+      typeRow.style.gap = '6px';
+      const typeLabel = document.createElement('span');
+      typeLabel.style.fontWeight = '600';
+      typeLabel.style.minWidth = '100px';
+      typeLabel.textContent = 'Type';
+      const typeSelect = document.createElement('select');
+      ['practice','sprint'].forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+        typeSelect.appendChild(opt);
+      });
+      typeSelect.value = (project.type || '').toLowerCase() === 'sprint' ? 'sprint' : 'practice';
+      typeSelect.style.flex = '1';
+      typeSelect.style.padding = '4px';
+      typeSelect.style.border = '1px solid #ccc';
+      typeSelect.style.borderRadius = '4px';
+      typeRow.appendChild(typeLabel);
+      typeRow.appendChild(typeSelect);
+      form.appendChild(typeRow);
+      // Outcome
+      const outcomeField = createRow('Outcome', project.outcome || '');
+      form.appendChild(outcomeField.row);
+      // Acceptance
+      const acceptField = createRow('Acceptance', project.acceptance || '');
+      form.appendChild(acceptField.row);
+      // Reference
+      const refField = createRow('Ref', project.ref || '');
+      form.appendChild(refField.row);
+      // Benefit
+      const benefitField = createRow('Benefit', project.benefit || '');
+      form.appendChild(benefitField.row);
+      // Today state
+      const todayField = createRow('Today', project.today_state || '');
+      form.appendChild(todayField.row);
+      // Details
+      const detailsField = createRow('Details', project.details || '', true);
+      form.appendChild(detailsField.row);
+      // Practice-specific fields
+      const measureField = createRow('Measure', project.measure || '');
+      const startField = createRow('Start', project.start != null ? project.start : '');
+      const targetField = createRow('Target', project.target != null ? project.target : '');
+      const daysField = createRow('Days/week', project.days != null ? project.days : '');
+      // Sprint-specific field
+      const durationField = createRow('Duration', project.duration || '');
+      // Functions to append fields based on type
+      function appendPracticeFields() {
+        form.appendChild(measureField.row);
+        form.appendChild(startField.row);
+        form.appendChild(targetField.row);
+        form.appendChild(daysField.row);
+      }
+      function appendSprintFields() {
+        form.appendChild(durationField.row);
+      }
+      // Initially append correct fields
+      if (typeSelect.value === 'sprint') {
+        appendSprintFields();
+      } else {
+        appendPracticeFields();
+      }
+      // Handle type changes
+      typeSelect.addEventListener('change', () => {
+        [measureField.row, startField.row, targetField.row, daysField.row, durationField.row].forEach(el => {
+          if (el.parentElement) el.parentElement.removeChild(el);
+        });
+        if (typeSelect.value === 'sprint') {
+          appendSprintFields();
+        } else {
+          appendPracticeFields();
+        }
+      });
+      // User priority
+      const userPrField = createRow('User priority', project.priority_user || '');
+      form.appendChild(userPrField.row);
+      // AI priority
+      const aiPrField = createRow('AI priority', project.priority_ai || '');
+      form.appendChild(aiPrField.row);
+      // Save and Cancel buttons
+      const buttonRow = document.createElement('div');
+      buttonRow.style.display = 'flex';
+      buttonRow.style.justifyContent = 'flex-end';
+      buttonRow.style.gap = '8px';
+      buttonRow.style.marginTop = '6px';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.padding = '4px 10px';
+      cancelBtn.style.fontSize = '0.85rem';
+      cancelBtn.style.cursor = 'pointer';
+      cancelBtn.style.border = '1px solid #ccc';
+      cancelBtn.style.borderRadius = '4px';
+      cancelBtn.style.background = '#f5f5f5';
+      cancelBtn.addEventListener('click', () => {
+        updateProjectsView();
+      });
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.style.padding = '4px 10px';
+      saveBtn.style.fontSize = '0.85rem';
+      saveBtn.style.cursor = 'pointer';
+      saveBtn.style.border = '1px solid #88c6cb';
+      saveBtn.style.borderRadius = '4px';
+      saveBtn.style.background = '#dff1f2';
+      saveBtn.addEventListener('click', () => {
+        // Commit changes to the project object
+        project.type = typeSelect.value;
+        project.action = nameField.input.value.trim();
+        project.outcome = outcomeField.input.value.trim();
+        project.acceptance = acceptField.input.value.trim();
+        project.ref = refField.input.value.trim();
+        project.benefit = benefitField.input.value.trim();
+        project.today_state = todayField.input.value.trim();
+        project.details = detailsField.input.value.trim();
+        project.priority_user = userPrField.input.value.trim();
+        project.priority_ai = aiPrField.input.value.trim();
+        if (typeSelect.value === 'sprint') {
+          project.duration = durationField.input.value.trim();
+          project.measure = '';
+          project.start = '';
+          project.target = '';
+          project.days = '';
+        } else {
+          project.duration = '';
+          project.measure = measureField.input.value.trim();
+          project.start = startField.input.value.trim();
+          project.target = targetField.input.value.trim();
+          project.days = daysField.input.value.trim();
+        }
+        // Refresh projects view
+        updateProjectsView();
+      });
+      buttonRow.appendChild(cancelBtn);
+      buttonRow.appendChild(saveBtn);
+      form.appendChild(buttonRow);
+      card.appendChild(form);
+    }
       const filterSelect = document.getElementById('tableFilterSelect');
       // Determine the selected filter.  For both beliefs and projects, allow pillar filtering.  Lens filters only apply on beliefs.
       let filterVal = 'all';
