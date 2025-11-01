@@ -1365,7 +1365,56 @@ const isSprintRow = (proj.type || '').toLowerCase() === 'sprint';
       C: { center: 0, microStart: 0, microEnd: 0 }
     };
 
-// Parse the default CSV on load from the embedded string.  Avoids
+    // Default CSV contents embedded as a template literal.  When the page
+    // loads we attempt to parse this instead of performing a network fetch.
+    const defaultCsvText = `label,belief
+title,Acme Robotics
+mode,business
+pillar_name:1,Team
+pillar_name:2,Revenue
+pillar_name:3,Customer
+core,"Be a calm, clear center that others can trust"
+pillar:1,Hire for slope; train for excellence
+pillar:2,Recurring revenue makes the weather boring
+pillar:3,Delight is practical
+sub:1:1,Leaders teach; they don’t rescue
+sub:1:2,Slow is smooth; smooth is fast
+sub:1:3,Raise the standard; shrink the task
+sub:2:1,Price signals value
+sub:2:2,Expand LTV before CAC
+sub:2:3,Find friction; sell relief
+sub:3:1,Onboarding is chapter one
+sub:3:2,Reduce choices; raise confidence
+sub:3:3,Close the loop
+micro:1:1:1,Weekly 1:1s unlock roadblocks
+micro:1:1:2,Empower through mentorship
+micro:1:1:3,Feedback fosters growth
+micro:1:2:1,Define clear priorities
+micro:1:2:2,Repetition builds mastery
+micro:1:2:3,Practice purposeful pacing
+micro:1:3:1,Set higher expectations
+micro:1:3:2,Focus on small wins
+micro:1:3:3,Deliver incremental progress
+micro:2:1:1,Price tiers communicate quality
+micro:2:1:2,Transparent pricing builds trust
+micro:2:1:3,Anchoring influences perception
+micro:2:2:1,Strengthen existing customers
+micro:2:2:2,Offer expansions before discounts
+micro:2:2:3,Segment markets intelligently
+micro:2:3:1,Map the buyer’s pain
+micro:2:3:2,Remove purchase friction
+micro:2:3:3,Provide clear ROI
+micro:3:1:1,Make onboarding delightful
+micro:3:1:2,Tailor first experiences
+micro:3:1:3,Guide with contextual help
+micro:3:2:1,Simplify choices
+micro:3:2:2,Default to best practice
+micro:3:2:3,Highlight recommendations
+micro:3:3:1,Collect feedback proactively
+micro:3:3:2,Respond within 24 hours
+micro:3:3:3,Follow-up closes the loop`;
+
+    // Parse the default CSV on load from the embedded string.  Avoids
     // reliance on file loading in the file:// scheme which may fail.  After
     // parsing, attempt to load a dataset specified via URL query parameters
     // (e.g. ?csv=custom.csv or ?data=BASE64ENCODEDCSV).  If a query
@@ -1549,10 +1598,9 @@ function showNoAIMFileNotice() {
           return;
         }
         if (label === 'mode') {
-  const modeStr = (belief && belief.trim()) ? belief.trim() : ((title && title.trim()) ? title.trim() : '');
-  data.mode = modeStr.toLowerCase() === 'personal' ? 'personal' : 'business';
-  return;
-}
+          data.mode = belief.toLowerCase() === 'personal' ? 'personal' : 'business';
+          return;
+        }
         if (label.startsWith('pillar_name:')) {
           const idx = parseInt(label.split(':')[1]);
           if (idx >= 1 && idx <= 3) {
@@ -1766,46 +1814,7 @@ function showNoAIMFileNotice() {
         // containing the belief text, confidence and a list of associated
         // pillars.  Missing confidence defaults to 50 and missing pillars
         // default to an empty array.  Labels may be like 'lens', 'lens:1', etc.
-        
-        // Standalone project rows (AIM-1.6). Accept alias columns.
-        if (label === 'project') {
-          if (!data.projects) data.projects = [];
-          const pType = (projectType && projectType.toLowerCase() === 'sprint') ? 'sprint' : 'practice';
-          // Accept alias columns used in S2.1
-          const measureVal = (row.project_measure !== undefined && String(row.project_measure).trim() !== '')
-            ? String(row.project_measure).trim()
-            : (row.how_we_count !== undefined ? String(row.how_we_count).trim() : '');
-          const startVal = (row.project_start !== undefined && row.project_start !== '')
-            ? String(row.project_start).trim()
-            : (row.start_amount !== undefined ? String(row.start_amount).trim() : '');
-          const targetVal = (row.project_target !== undefined && row.project_target !== '')
-            ? String(row.project_target).trim()
-            : (row.target_amount !== undefined ? String(row.target_amount).trim() : '');
-          const daysVal = (row.project_days_per_week !== undefined && row.project_days_per_week !== '')
-            ? String(row.project_days_per_week).trim()
-            : (row.days_per_week !== undefined ? String(row.days_per_week).trim() : '');
-          const proj = {
-            action: (row.project_action && String(row.project_action).trim() !== '') ? String(row.project_action).trim() : (title || belief || ''),
-            benefit: (row.project_benefit !== undefined ? String(row.project_benefit).trim() : ''),
-            type: pType,
-            duration: (pType === 'sprint') ? (durationVal || '') : '',
-            measure: (pType === 'sprint') ? '' : measureVal,
-            start: (pType === 'sprint') ? '' : startVal,
-            target: (pType === 'sprint') ? '' : targetVal,
-            days: (pType === 'sprint') ? '' : daysVal,
-            priority_user: (row.priority_user !== undefined ? String(row.priority_user).trim() : (row.user_priority !== undefined ? String(row.user_priority).trim() : (row.priority_human !== undefined ? String(row.priority_human).trim() : ''))),
-            priority_ai: (row.priority_ai !== undefined ? String(row.priority_ai).trim() : (row.ai_priority !== undefined ? String(row.ai_priority).trim() : '')),
-            today_state: (row.today_state !== undefined ? String(row.today_state).trim() : ''),
-            details: (row.details !== undefined ? String(row.details).trim() : ''),
-            outcome: (row.project_outcome !== undefined ? String(row.project_outcome).trim() : ''),
-            acceptance: (row.project_acceptance !== undefined ? String(row.project_acceptance).trim() : ''),
-            ref: (row.project_ref !== undefined ? String(row.project_ref).trim() : ''),
-            pillar: null
-          };
-          data.projects.push(proj);
-          return;
-        }
-if (label.startsWith('lens')) {
+        if (label.startsWith('lens')) {
           if (belief) {
             let pillarsList = [];
             // Attempt to parse pillars from row.pillars if present
@@ -1846,14 +1855,7 @@ if (label.startsWith('lens')) {
           return;
         }
       });
-      
-      // Prefer pillar row titles as pillar names everywhere (legend, lenses, center).
-      for (let i = 1; i <= 3; i++) {
-        if (data.pillars[i] && data.pillars[i].title && data.pillars[i].title.trim() !== '') {
-          data.pillarNames[i] = data.pillars[i].title.trim();
-        }
-      }
-// Set default pillar names based on mode if missing
+      // Set default pillar names based on mode if missing
       const defaultNames = data.mode === 'personal'
         ? ['Outer Self','Inner Self','Relationships']
         : ['Team','Revenue','Customer'];
