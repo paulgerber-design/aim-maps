@@ -287,7 +287,7 @@
           <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z" fill="currentColor"/>
         </svg>
       </button>
-      <a id="adminDocLink" href="https://docs.google.com/document/d/e/2PACX-1vQb2R2CfsX_-uIFGb47NrtRK9PWGAlLQfAfsglQkI68PU0Zhmg9PhtwwOg03aXjnIGA1u4e3bugyDvz/pub" target="_blank" rel="noopener noreferrer" title="What this AIM viewer does, what's missing, and what's next (internal)" style="margin-left:8px; font-size:0.85rem; padding:4px 8px; border:1px solid #cccccc; border-radius:4px; background:#f9f9f9; color:#2a4d55; text-decoration:none;">About me</a>
+      <a id="aboutMeLink" href="https://docs.google.com/document/d/e/2PACX-1vQb2R2CfsX_-uIFGb47NrtRK9PWGAlLQfAfsglQkI68PU0Zhmg9PhtwwOg03aXjnIGA1u4e3bugyDvz/pub" target="_blank" rel="noopener noreferrer" title="What this AIM viewer does, what's missing, and what's next (internal)" style="margin-left:8px; font-size:0.85rem; padding:4px 8px; border:1px solid #cccccc; border-radius:4px; background:#f9f9f9; color:#2a4d55; text-decoration:none;">About Me</a>
     </div>
   </header>
   <!-- Tabs to switch between AIM and Projects views -->
@@ -1279,7 +1279,45 @@ const isSprintRow = (proj.type || '').toLowerCase() === 'sprint';
         // Include the pillars column when exporting lenses.  The csvFormat
         // function will include empty values for non‑lens rows automatically.
         // When exporting, include the title column in addition to belief and confidence.
-        const csvContent = d3.csvFormat(rows, ['label','title','belief','confidence','pillars']);
+        // Append project rows (practice / sprint) so they round‑trip on re‑upload
+if (Array.isArray(aimData.projects) && aimData.projects.length > 0) {
+  aimData.projects.forEach((p) => {
+    const typeRaw = (p.type || p.project_type || '').toString().toLowerCase();
+    const typePretty = typeRaw ? (typeRaw.charAt(0).toUpperCase() + typeRaw.slice(1)) : '';
+    const title = p.action
+      ? (typePretty ? (p.action + ' — ' + typePretty) : p.action)
+      : (p.title || '');
+    const belief = p.outcome
+      ? ('Project — ' + p.outcome)
+      : (p.benefit || p.details || '');
+    rows.push({
+      label: 'project',
+      title: title,
+      belief: belief,
+      confidence: (typeof p.confidence === 'number') ? p.confidence : '',
+      pillars: '',
+      project_type: typeRaw || '',
+      project_action: p.action || p.project_action || '',
+      project_measure: p.measure || p.project_measure || '',
+      project_start: (p.start ?? p.project_start ?? ''),
+      project_target: (p.target ?? p.project_target ?? ''),
+      project_days_per_week: (p.days ?? p.project_days_per_week ?? ''),
+      project_benefit: p.benefit || p.project_benefit || '',
+      priority_user: p.priority_user || p.priority_human || '',
+      priority_ai: p.priority_ai || '',
+      duration: p.duration || '',
+      today_state: p.today_state || '',
+      details: p.details || '',
+      project_outcome: p.outcome || '',
+      project_acceptance: p.acceptance || '',
+      project_ref: p.ref || '',
+      pillar: (p.pillar ?? '')
+    });
+  });
+}
+// Define columns explicitly so project fields are preserved on export
+const exportColumns = ['label','title','belief','confidence','pillars', 'project_type','project_action','project_measure','project_start','project_target', 'project_days_per_week','project_benefit','priority_user','priority_ai','duration', 'today_state','details','project_outcome','project_acceptance','project_ref', 'priority_human','pillar'];
+const csvContent = d3.csvFormat(rows, exportColumns);
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1594,6 +1632,39 @@ function showNoAIMFileNotice() {
         const projectTarget = row.project_target !== undefined && row.project_target !== '' ? parseFloat(row.project_target) : null;
         const projectDays = row.project_days_per_week !== undefined && row.project_days_per_week !== '' ? parseInt(row.project_days_per_week) : null;
         const projectBenefit = row.project_benefit !== undefined ? String(row.project_benefit).trim() : '';
+        // Support standalone project rows (label = 'project') exported by this viewer.
+        if (label === 'project') {
+          const hasLegacyProj = projectAction || projectMeasure || projectStart !== null || projectTarget !== null || projectDays !== null || projectBenefit;
+          const hasNewProj = projectOutcome || projectAcceptance || projectRef;
+          if (hasLegacyProj || hasNewProj || projectType || durationVal) {
+            if (!data.projects) data.projects = [];
+            let pillarIdx = null;
+            if (row.pillar !== undefined && row.pillar !== null && String(row.pillar).trim() !== '') {
+              const tmp = parseInt(String(row.pillar).trim());
+              if (!isNaN(tmp)) pillarIdx = tmp;
+            }
+            data.projects.push({
+              action: projectAction || (title || belief),
+              measure: projectMeasure || '',
+              start: projectStart,
+              target: projectTarget,
+              days: projectDays,
+              benefit: projectBenefit || '',
+              priority_user: priorityUser || '',
+              priority_ai: priorityAi || '',
+              outcome: projectOutcome || '',
+              acceptance: projectAcceptance || '',
+              ref: projectRef || '',
+              today_state: todayState || '',
+              details: detailsVal || '',
+              pillar: pillarIdx,
+              type: projectType || (hasLegacyProj ? 'practice' : ''),
+              duration: durationVal || ''
+            });
+          }
+          return;
+        }
+
         if (label === 'title') {
           data.title = belief;
           return;
