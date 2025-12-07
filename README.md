@@ -8,15 +8,16 @@ The original monolithic `index.html` (4,321 lines) has been split into modular f
 
 ```
 aim-viewer-refactored/
-├── index.html          # Clean HTML structure only (~150 lines)
+├── index.html           # Clean HTML structure only (~160 lines)
 ├── css/
-│   └── styles.css      # All CSS extracted (~470 lines)
+│   └── styles.css       # All CSS extracted (~470 lines)
 └── js/
-    ├── config.js       # Centralized constants & settings (~180 lines)
-    ├── utils.js        # Helper functions (~275 lines)
-    ├── data-parser.js  # CSV parsing logic (~420 lines)
+    ├── config.js        # Centralized constants & settings (~180 lines)
+    ├── utils.js         # Helper functions (~275 lines)
+    ├── data-parser.js   # CSV parsing logic (~420 lines)
     ├── state-manager.js # Application state (~315 lines)
-    └── app.js          # Main application logic (~720 lines)
+    ├── chart-renderer.js # D3 sunburst visualization (~700 lines)
+    └── app.js           # Main application logic (~550 lines)
 ```
 
 ## Module Descriptions
@@ -58,6 +59,21 @@ Application state management:
 - Event subscription system for reactive updates
 - Navigation actions (navigateToFullView, navigateToPillar, navigateToSub)
 
+### `chart-renderer.js` — AIMChartRenderer
+D3 sunburst visualization:
+- `init(refs)` — Initialize with DOM references
+- `updateChart()` — Main rendering function
+- `computeRadii()` — Calculate ring dimensions for each state
+- `computeArcDescriptors()` — Generate arc data for current view
+- `drawSeparators(g)` — Draw divider lines between wedges
+- `drawCenterText(g)` — Core/pillar/sub belief display
+- `drawArcLabels(g, descriptors)` — Text labels on arcs
+- `addCenterHover(g)` — Center tooltip interaction
+- `handleArcClick(d)` — Navigation on wedge click
+- Tooltip functions (show, move, hide)
+- Legend highlight effects
+- Flash ring animation
+
 ### `app.js` — AIMApp
 Main application:
 - DOM element caching
@@ -67,26 +83,7 @@ Main application:
 - Rendering coordination
 - CSV export
 - Keyboard shortcuts
-
-## What's NOT Yet Migrated
-
-The sunburst chart rendering logic is the most complex part (~1,500 lines in the original). The `app.js` includes a placeholder `updateChart()` function. To complete the migration:
-
-1. Create `js/chart-renderer.js` with:
-   - `computeRadii()` — Calculate ring dimensions
-   - `computeArcDescriptors()` — Generate arc data
-   - `updateChart()` — Main D3 rendering
-   - `drawSeparators()` — Draw divider lines
-   - `drawCenterText()` — Core belief display
-   - `drawArcLabels()` — Text labels on arcs
-   - Tooltip handlers
-   - Click/hover interactions
-
-2. Create `js/ui-handlers.js` with:
-   - Table view building
-   - Project card creation
-   - Inline editing
-   - Form builders
+- Table view building
 
 ## Usage
 
@@ -106,32 +103,37 @@ The file structure works directly with GitHub Pages. Just push to your repo.
 
 ## Benefits of This Architecture
 
-1. **Easier AI Assistance** — Each module is focused and under 500 lines
-2. **Clear Separation** — CSS, config, logic, and state are isolated
+1. **Easier AI Assistance** — Each module is focused and under 700 lines
+2. **Clear Separation** — CSS, config, logic, state, and rendering are isolated
 3. **Testable** — Modules can be tested independently
 4. **Maintainable** — Changes to one area don't require understanding the whole codebase
 5. **Extensible** — New features can be added as new modules
 
-## Migration Path
+## Migration Checklist
 
-To complete the migration from the original `index.html`:
-
-1. ✅ Extract CSS → `styles.css`
-2. ✅ Extract config → `config.js`
-3. ✅ Extract utilities → `utils.js`
-4. ✅ Extract data parsing → `data-parser.js`
-5. ✅ Extract state management → `state-manager.js`
-6. ✅ Create app shell → `app.js`
-7. ⏳ Extract chart rendering → `chart-renderer.js` (TODO)
-8. ⏳ Extract UI handlers → `ui-handlers.js` (TODO)
+- ✅ Extract CSS → `styles.css`
+- ✅ Extract config → `config.js`
+- ✅ Extract utilities → `utils.js`
+- ✅ Extract data parsing → `data-parser.js`
+- ✅ Extract state management → `state-manager.js`
+- ✅ Extract chart rendering → `chart-renderer.js`
+- ✅ Create app shell → `app.js`
 
 ## Comparison
 
 | Metric | Original | Refactored |
 |--------|----------|------------|
-| Files | 1 | 7 |
-| Total lines | 4,321 | ~2,533 |
-| Largest file | 4,321 | ~720 |
+| Files | 1 | 8 |
+| Total lines | 4,321 | ~3,070 |
+| Largest file | 4,321 | ~700 |
 | CSS in JS | Mixed | Separated |
 | Config scattered | Yes | Centralized |
 | State management | Global vars | Module |
+| Chart code | Inline | Dedicated module |
+
+## URL Parameters
+
+The viewer supports loading data via URL parameters:
+- `?csv=filename.csv` — Load from a local/relative CSV file
+- `?gist=GIST_ID` — Load from a GitHub Gist
+- `?data=BASE64` — Load from base64-encoded CSV data
