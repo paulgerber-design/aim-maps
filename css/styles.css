@@ -1,0 +1,473 @@
+/**
+ * AIM Viewer Styles
+ * Extracted from monolithic index.html
+ * v1.0.0
+ */
+
+/* ==========================================================================
+   Reset & Typography
+   ========================================================================== */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  background: #ffffff;
+  color: #333333;
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+#titleBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  padding-right: 16px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#headerActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px;
+  gap: 16px;
+}
+
+#chartWrapper {
+  flex: 1 1 0;
+  min-width: 0;
+  position: relative;
+  min-height: 480px;
+}
+
+svg#aimChart {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#sidebar {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* ==========================================================================
+   Breadcrumb Navigation
+   ========================================================================== */
+
+#breadcrumb {
+  font-size: 0.85rem;
+  color: #666;
+  padding: 8px 12px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#breadcrumb a {
+  color: #2a4d55;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+#breadcrumb .separator {
+  margin: 0 6px;
+  color: #999;
+}
+
+#breadcrumb .current {
+  color: #333;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+
+#tabBar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  margin-top: 8px;
+  padding-left: 12px;
+}
+
+.tabButton {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #eaf5f6;
+  border: 1px solid #b7dfe1;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #2a4d55;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tabButton.active {
+  background: #ffffff;
+  border-color: #88c6cb;
+  font-weight: 600;
+  color: #1d3940;
+}
+
+.tabButton:hover {
+  background: #dff1f2;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #f9f9f9;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  background: #efefef;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.iconButton {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #f9f9f9;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.iconButton:hover {
+  background: #efefef;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+/* ==========================================================================
+   Legend
+   ========================================================================== */
+
+#legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  position: relative;
+}
+
+.legend-chip .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.legend-chip:hover .dot,
+.legend-chip:focus-visible .dot {
+  outline: 2px solid currentColor;
+}
+
+.legend-chip.selected .dot {
+  border: 2px solid currentColor;
+}
+
+/* ==========================================================================
+   Heatmap Controls
+   ========================================================================== */
+
+#heatmapToggleContainer {
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#heatmapSelect {
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  margin-left: 0;
+  margin-top: 2px;
+}
+
+#heatmapLegend {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  margin-top: 4px;
+  margin-left: 0;
+  max-width: 220px;
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #999;
+  font-size: 10px;
+  cursor: default;
+  line-height: 14px;
+}
+
+/* ==========================================================================
+   Lenses
+   ========================================================================== */
+
+#lensesBlock {
+  margin-top: 12px;
+  max-width: 200px;
+}
+
+#lensesList {
+  font-size: 0.85rem;
+  color: #333;
+}
+
+/* ==========================================================================
+   Tooltip
+   ========================================================================== */
+
+#tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  z-index: 200;
+  max-width: 240px;
+  display: none;
+  color: #111;
+}
+
+#tooltip .breadcrumb {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   Table Overlay
+   ========================================================================== */
+
+#tableOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+#tableOverlay .tableContainer {
+  background: #ffffff;
+  border-radius: 6px;
+  max-width: 90%;
+  max-height: 90%;
+  padding: 16px;
+  overflow: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+#tableOverlay table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+#tableOverlay th, 
+#tableOverlay td {
+  border: 1px solid #dddddd;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+#tableOverlay th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+#tableOverlay tbody tr:nth-child(even) {
+  background: #fcfcfc;
+}
+
+#tableOverlay input[type="search"] {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+}
+
+#closeTableBtn {
+  margin-bottom: 8px;
+}
+
+#editNote {
+  display: none;
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+#dataTabBar {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+/* ==========================================================================
+   Projects View
+   ========================================================================== */
+
+#projectsView {
+  display: none;
+  padding: 16px;
+}
+
+#projectsView h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+#projectsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#showMoreProjectsBtn,
+#showLessProjectsBtn {
+  display: none;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+#showLessProjectsBtn {
+  margin-top: 4px;
+}
+
+/* Hide edit buttons on project cards */
+#projectsList .iconButton[title="Edit project"] {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Empty State
+   ========================================================================== */
+
+#noDataNotice {
+  padding: 16px;
+  background: #fffbe6;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  margin: 16px;
+}
+
+#noDataNotice ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+/* ==========================================================================
+   SVG Focus States
+   ========================================================================== */
+
+.wedge:focus-visible {
+  stroke: #000;
+  stroke-width: 2px;
+}
+
+svg .wedge:focus {
+  outline: none;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 600px) {
+  #container {
+    flex-direction: column;
+  }
+  
+  #sidebar {
+    width: auto;
+    margin-top: 20px;
+  }
+  
+  #legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  /* Increase touch targets on mobile */
+  .iconButton {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .tabButton {
+    padding: 10px 16px;
+  }
+}
