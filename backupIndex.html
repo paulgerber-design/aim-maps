@@ -1478,8 +1478,12 @@ function showNoAIMFileNotice() {
       box.style.fontSize = '0.95rem';
       box.innerHTML = `<strong>No AIM file found.</strong>
         <div style="margin-top:6px;">
-          This page isn’t pointed to an AIM CSV yet. Please upload an AIM file with the <em>Upload CSV</em> button above,
-          or add <code>?csv=your-file.csv</code> to the URL.
+          This page is not pointed to an AIM file yet. You can:
+          <ul style="margin:8px 0 0 0; padding-left:20px;">
+            <li>Upload an AIM file with the <em>Upload CSV</em> button above</li>
+            <li>Add <code>?csv=your-file.csv</code> to the URL</li>
+            <li>Add <code>?gist=GIST_ID</code> to load from a GitHub Gist</li>
+          </ul>
         </div>`;
       aimView.prepend(box);
     }
@@ -2059,6 +2063,82 @@ function showNoAIMFileNotice() {
     return;
             } catch (err) {
               console.error('Error decoding CSV data from query parameter:', err);
+            }
+          }
+        }
+
+        // Load from ?gist=GIST_ID (GitHub Gist integration)
+        // Accepts either a full Gist ID or a raw Gist URL
+        if (params.has('gist')) {
+          const gistParam = params.get('gist');
+          if (gistParam) {
+            try {
+              let gistUrl;
+              // Check if it's already a full URL
+              if (gistParam.startsWith('http')) {
+                gistUrl = gistParam;
+              } else {
+                // Construct raw Gist URL from ID
+                // Format: https://gist.githubusercontent.com/{owner}/{gist_id}/raw
+                // For anonymous/unknown owner, we use the Gist API to get raw URL
+                gistUrl = `https://api.github.com/gists/${gistParam}`;
+              }
+              
+              // Fetch Gist metadata to get raw file URL
+              const response = await fetch(gistUrl);
+              if (!response.ok) {
+                console.warn('Could not load Gist:', gistParam, response.status);
+              } else {
+                let csvText;
+                
+                // If we fetched from API, extract raw URL from response
+                if (gistUrl.includes('api.github.com')) {
+                  const gistData = await response.json();
+                  // Get the first file in the Gist (typically the CSV)
+                  const files = gistData.files;
+                  const fileNames = Object.keys(files);
+                  // Prefer .csv files, otherwise take first file
+                  let targetFile = fileNames.find(name => name.endsWith('.csv')) || fileNames[0];
+                  if (targetFile && files[targetFile]) {
+                    // For small files, content is inline; for larger files, fetch raw_url
+                    if (files[targetFile].content) {
+                      csvText = files[targetFile].content;
+                    } else if (files[targetFile].raw_url) {
+                      const rawResponse = await fetch(files[targetFile].raw_url);
+                      csvText = await rawResponse.text();
+                    }
+                  }
+                } else {
+                  // Direct raw URL provided
+                  csvText = await response.text();
+                }
+                
+                if (csvText) {
+                  const rows = d3.csvParse(csvText);
+                  aimData = parseCSV(rows);
+                  
+                  // SK: After successful parse, hide missing-file notice and render
+                  (function SK_onGistSuccess(){
+                    try {
+                      const notice = document.getElementById('noDataNotice');
+                      if (notice) notice.remove();
+                      const container = document.querySelector('#aimView #container');
+                      if (container) container.style.display = '';
+                    } catch(_) {}
+                    if (typeof initialisePage === 'function') {
+                      initialisePage();
+                    } else {
+                      if (typeof updateLegend === 'function') updateLegend();
+                      if (typeof updateLenses === 'function') updateLenses();
+                      if (typeof updateChart === 'function') updateChart();
+                      if (typeof updateProjectsView === 'function') updateProjectsView();
+                    }
+                  })();
+                  return;
+                }
+              }
+            } catch (err) {
+              console.error('Error loading Gist:', err);
             }
           }
         }
