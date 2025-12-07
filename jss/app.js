@@ -55,7 +55,9 @@ const AIMApp = (function() {
       tableSearchInput: document.getElementById('tableSearch'),
       editTitleInput: document.getElementById('editTitleInput'),
       downloadCsvBtn: document.getElementById('downloadCsvBtn'),
-      editDataBtn: document.getElementById('editDataBtn')
+      editDataBtn: document.getElementById('editDataBtn'),
+      nodeTableBody: document.querySelector('#nodeTable tbody'),
+      projectsTableBody: document.querySelector('#projectsTable tbody')
     };
   }
 
@@ -68,6 +70,14 @@ const AIMApp = (function() {
    */
   async function init() {
     cacheElements();
+    
+    // Initialize chart renderer with DOM references
+    AIMChartRenderer.init({
+      svg: elements.svg,
+      tooltip: elements.tooltip,
+      legendContainer: elements.legendContainer
+    });
+    
     setupEventListeners();
     setupStateSubscription();
     
@@ -471,12 +481,9 @@ const AIMApp = (function() {
 
   /**
    * Update the sunburst chart
-   * This is a simplified placeholder - the full implementation would be in chart-renderer.js
    */
   function updateChart() {
-    // Chart rendering logic would go here
-    // For now, this is a placeholder that would call the chart renderer module
-    console.log('Chart update triggered', AIMState.getState());
+    AIMChartRenderer.updateChart();
   }
 
   /**
@@ -520,8 +527,89 @@ const AIMApp = (function() {
    * Build table view
    */
   function buildTableView() {
-    // Table building logic - simplified placeholder
-    console.log('Building table view');
+    const data = AIMState.getData();
+    if (!data || !elements.nodeTableBody) return;
+
+    const rows = [];
+    
+    // Core
+    rows.push({
+      depth: 0, pillar: '', sub: '', micro: '',
+      label: 'Core',
+      title: data.core.title || '',
+      belief: data.core.belief || '',
+      confidence: data.core.confidence || 50,
+      updated: data.core.updated || ''
+    });
+
+    // Pillars, subs, micros
+    for (let p = 1; p <= 3; p++) {
+      rows.push({
+        depth: 1, pillar: p, sub: '', micro: '',
+        label: data.pillarNames[p] || '',
+        title: data.pillars[p].title || '',
+        belief: data.pillars[p].belief || '',
+        confidence: data.pillars[p].confidence || 50,
+        updated: data.pillars[p].updated || ''
+      });
+
+      for (let s = 1; s <= 3; s++) {
+        rows.push({
+          depth: 2, pillar: p, sub: s, micro: '',
+          label: '',
+          title: data.subs[p][s].title || '',
+          belief: data.subs[p][s].belief || '',
+          confidence: data.subs[p][s].confidence || 50,
+          updated: data.subs[p][s].updated || ''
+        });
+
+        for (let m = 1; m <= 3; m++) {
+          rows.push({
+            depth: 3, pillar: p, sub: s, micro: m,
+            label: '',
+            title: data.micros[p][s][m].title || '',
+            belief: data.micros[p][s][m].belief || '',
+            confidence: data.micros[p][s][m].confidence || 50,
+            updated: data.micros[p][s][m].updated || ''
+          });
+        }
+      }
+    }
+
+    // Lenses
+    if (data.lenses && data.lenses.length > 0) {
+      data.lenses.forEach((lens, idx) => {
+        const pillarNames = lens.pillars?.map(p => data.pillarNames[p] || '').filter(Boolean) || [];
+        rows.push({
+          depth: 4, pillar: '', sub: '', micro: '',
+          label: `Lens ${idx + 1}`,
+          title: lens.title || '',
+          belief: lens.belief || '',
+          confidence: lens.confidence || '',
+          updated: lens.updated || '',
+          applies: pillarNames.join(', ')
+        });
+      });
+    }
+
+    // Populate table
+    elements.nodeTableBody.innerHTML = rows.map(row => `
+      <tr>
+        <td>${row.depth}</td>
+        <td>${row.pillar}</td>
+        <td>${row.sub}</td>
+        <td>${row.micro}</td>
+        <td>${row.title || row.label}</td>
+        <td>${row.belief}</td>
+        <td>${row.confidence}</td>
+        <td>${row.updated ? AIMUtils.formatDateString(row.updated) : ''}</td>
+      </tr>
+    `).join('');
+
+    // Update title input
+    if (elements.editTitleInput) {
+      elements.editTitleInput.value = data.title || '';
+    }
   }
 
   // ==========================================================================
