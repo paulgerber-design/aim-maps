@@ -280,7 +280,8 @@ const AIMApp = (function() {
         const csvFile = Object.values(files).find(f => f.filename.endsWith('.csv'));
         
         if (csvFile) {
-          const parsed = AIMDataParser.parseCSV(csvFile.content);
+          const rows = d3.csvParse(csvFile.content);
+          const parsed = AIMDataParser.parseCSV(rows);
           if (parsed) {
             AIMState.setData(parsed);
             render();
@@ -304,11 +305,17 @@ const AIMApp = (function() {
     reader.onload = (e) => {
       const content = e.target?.result;
       if (typeof content === 'string') {
-        const parsed = AIMDataParser.parseCSV(content);
-        if (parsed) {
-          AIMState.setData(parsed);
-          render();
-        } else {
+        try {
+          const rows = d3.csvParse(content);
+          const parsed = AIMDataParser.parseCSV(rows);
+          if (parsed) {
+            AIMState.setData(parsed);
+            render();
+          } else {
+            alert('Failed to parse CSV file. Please check the format.');
+          }
+        } catch (err) {
+          console.error('Error parsing CSV:', err);
           alert('Failed to parse CSV file. Please check the format.');
         }
       }
