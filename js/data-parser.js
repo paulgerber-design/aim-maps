@@ -1,7 +1,7 @@
 /**
  * AIM Viewer Data Parser
  * Handles CSV parsing and data structure creation
- * v1.0.0
+ * v2.0.0 - Phase 5a: Support for insight fields, project_rationale, numeric priorities
  */
 
 const AIMDataParser = (function() {
@@ -151,6 +151,7 @@ const AIMDataParser = (function() {
     const projectOutcome = row.project_outcome !== undefined ? String(row.project_outcome).trim() : '';
     const projectAcceptance = row.project_acceptance !== undefined ? String(row.project_acceptance).trim() : '';
     const projectRef = row.project_ref !== undefined ? String(row.project_ref).trim() : '';
+    const projectRationale = row.project_rationale !== undefined ? String(row.project_rationale).trim() : '';
 
     return {
       title,
@@ -177,7 +178,8 @@ const AIMDataParser = (function() {
       projectBenefit,
       projectOutcome,
       projectAcceptance,
-      projectRef
+      projectRef,
+      projectRationale
     };
   }
 
@@ -202,7 +204,18 @@ const AIMDataParser = (function() {
    */
   function createProject(fields, pillarIdx) {
     const { hasLegacy } = hasProjectData(fields);
+    
+    // Parse priority_ai as number if possible
+    let priorityAi = fields.priorityAi || '';
+    if (priorityAi !== '') {
+      const num = parseInt(priorityAi);
+      if (!isNaN(num)) {
+        priorityAi = num;
+      }
+    }
+    
     return {
+      name: fields.title || fields.projectAction || fields.belief || '',
       action: fields.projectAction || (fields.title || fields.belief),
       measure: fields.projectMeasure || '',
       start: fields.projectStart,
@@ -210,10 +223,11 @@ const AIMDataParser = (function() {
       days: fields.projectDays,
       benefit: fields.projectBenefit || '',
       priority_user: fields.priorityUser || '',
-      priority_ai: fields.priorityAi || '',
+      priority_ai: priorityAi,
       outcome: fields.projectOutcome || '',
       acceptance: fields.projectAcceptance || '',
       ref: fields.projectRef || '',
+      project_rationale: fields.projectRationale || '',
       today_state: fields.todayState || '',
       details: fields.details || '',
       pillar: pillarIdx,
@@ -262,7 +276,21 @@ const AIMDataParser = (function() {
       subs: {},
       micros: {},
       lenses: [],
-      projects: []
+      projects: [],
+      // Insight fields - overall
+      insight_overview: '',
+      insight_observations: '',
+      insight_projects: '',
+      // Insight fields - per pillar
+      insight_pillar_1_overview: '',
+      insight_pillar_1_observations: '',
+      insight_pillar_1_projects: '',
+      insight_pillar_2_overview: '',
+      insight_pillar_2_observations: '',
+      insight_pillar_2_projects: '',
+      insight_pillar_3_overview: '',
+      insight_pillar_3_observations: '',
+      insight_pillar_3_projects: ''
     };
 
     rows.forEach(row => {
@@ -294,6 +322,15 @@ const AIMDataParser = (function() {
       // Mode row
       if (label === 'mode') {
         data.mode = fields.belief.toLowerCase() === 'personal' ? 'personal' : 'business';
+        return;
+      }
+      
+      // Insight rows
+      if (label.startsWith('insight_')) {
+        const insightKey = label;
+        if (data.hasOwnProperty(insightKey)) {
+          data[insightKey] = fields.belief;
+        }
         return;
       }
 

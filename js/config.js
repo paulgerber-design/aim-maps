@@ -1,7 +1,7 @@
 /**
  * AIM Viewer Configuration
  * Centralized constants and settings
- * v1.0.0
+ * v2.0.0 - Phase 5a: Renamed poles, AIM ONE integration
  */
 
 const AIM_CONFIG = {
@@ -28,10 +28,16 @@ const AIM_CONFIG = {
   
   /** Base colors for each pillar (index 0-2 maps to pillars 1-3) */
   pillarColors: [
-    '#88c6cb',  // Pillar 1: Teal
-    '#c6a4d4',  // Pillar 2: Purple
-    '#f0c27b'   // Pillar 3: Gold
+    '#88c6cb',  // Pillar 1: Teal (Outer Self)
+    '#c6a4d4',  // Pillar 2: Purple (Inner Self)
+    '#f0c27b'   // Pillar 3: Gold (Relationships)
   ],
+  
+  /** Color for incomplete/empty segments */
+  incompleteColor: '#e8e8e8',
+  
+  /** Pattern for incomplete segments */
+  incompletePattern: 'diagonal',
   
   /** Alpha values for depth levels (creates visual hierarchy) */
   depthAlpha: {
@@ -57,37 +63,53 @@ const AIM_CONFIG = {
   ],
   
   // ==========================================================================
-  // Pole Configuration
+  // Pole Configuration (Renamed in v2.0.0)
   // ==========================================================================
   
   /** Pole axis definitions */
   poles: {
-    ac: {
-      name: 'Adaptive Challenge',
-      shortName: 'Adaptive',
+    adapting: {
+      key: 'ac',
+      name: 'Adapting',
+      shortName: 'Adapting',
       left: { letter: 'F', name: 'Fixed' },
       right: { letter: 'G', name: 'Guided' },
-      description: 'How you prefer to be challenged: self-directed vs. externally guided'
+      description: 'How you prefer to grow: self-directed (Fixed) vs. welcoming external guidance (Guided)',
+      philosophy: 'Fixed learners thrive with autonomy and self-paced exploration. Guided learners flourish with mentorship and structured feedback. Neither is better—knowing your preference helps design the right growth environment.'
     },
-    ce: {
-      name: 'Celebration',
-      shortName: 'Celebration',
+    celebrating: {
+      key: 'ce',
+      name: 'Celebrating',
+      shortName: 'Celebrating',
       left: { letter: 'R', name: 'Results' },
       right: { letter: 'P', name: 'Practice' },
-      description: 'What you celebrate: destinations/outcomes vs. the process/practice'
+      description: 'What energizes you: achieving outcomes (Results) vs. enjoying the process (Practice)',
+      philosophy: 'Results-oriented people are motivated by milestones and achievements. Practice-oriented people find joy in the daily ritual itself. Understanding this shapes how we frame goals and measure progress.'
     },
-    cx: {
-      name: 'Collective Experience',
-      shortName: 'Collective',
+    connecting: {
+      key: 'cx',
+      name: 'Connecting',
+      shortName: 'Connecting',
       left: { letter: 'A', name: 'Autonomous' },
       right: { letter: 'S', name: 'Synchronized' },
-      description: 'How you prefer to work: independently vs. with others'
+      description: 'How you prefer to engage: independently (Autonomous) vs. with others (Synchronized)',
+      philosophy: 'Autonomous people recharge alone and do deep work in solitude. Synchronized people gain energy from collaboration and shared experiences. Both are valid paths to growth and fulfillment.'
     }
+  },
+  
+  /** Legacy key mapping (for CSV compatibility) */
+  poleKeyMap: {
+    'ac': 'adapting',
+    'ce': 'celebrating', 
+    'cx': 'connecting',
+    'pole_gf': 'adapting',
+    'pole_pr': 'celebrating',
+    'pole_sa': 'connecting'
   },
   
   /** Magnitude labels for pole values */
   poleMagnitudeLabels: {
-    0: 'middle',
+    0: 'balanced',
     1: 'leans',
     2: 'mostly',
     3: 'clearly'
@@ -107,16 +129,16 @@ const AIM_CONFIG = {
       label: 'Alignment',
       description: 'How well each belief aligns with your actions (0-100)'
     },
-    ac: {
-      label: 'Adaptive Challenge',
-      description: 'Fixed (self-paced) ↔ Guided (welcomes direction)'
+    adapting: {
+      label: 'Adapting',
+      description: 'Fixed (self-directed) ↔ Guided (welcomes direction)'
     },
-    ce: {
-      label: 'Celebration',
-      description: 'Results (finish line) ↔ Practice (the journey)'
+    celebrating: {
+      label: 'Celebrating',
+      description: 'Results (outcomes) ↔ Practice (the journey)'
     },
-    cx: {
-      label: 'Collective Experience',
+    connecting: {
+      label: 'Connecting',
       description: 'Autonomous (solo) ↔ Synchronized (together)'
     }
   },
@@ -135,13 +157,35 @@ const AIM_CONFIG = {
   // Project Settings
   // ==========================================================================
   
-  /** Default number of projects to show before "Show more" */
-  projectsInitialDisplay: 5,
+  /** Default number of project recommendations to show */
+  projectsInitialDisplay: 1,
+  
+  /** Additional projects to show on "show more" */
+  projectsExpandedDisplay: 3,
   
   /** Project type labels */
   projectTypes: {
     practice: { label: 'Practice', description: 'Ongoing habit or routine' },
     sprint: { label: 'Sprint', description: 'Time-boxed goal' }
+  },
+  
+  // ==========================================================================
+  // AIM ONE Integration
+  // ==========================================================================
+  
+  /** AIM ONE Claude Project ID */
+  aimOneProjectId: '019ac79c-20d1-73ea-8e1e-05d90fbbdd94',
+  
+  /** Base URL for AIM ONE */
+  aimOneBaseUrl: 'https://claude.ai/project/',
+  
+  /** Get full AIM ONE URL */
+  getAimOneUrl: function(focus) {
+    const base = this.aimOneBaseUrl + this.aimOneProjectId;
+    if (focus) {
+      return base + '?focus=' + encodeURIComponent(focus);
+    }
+    return base;
   },
   
   // ==========================================================================
@@ -159,22 +203,23 @@ const AIM_CONFIG = {
   flashDuration: 600,
   
   /** Transition duration for chart updates (ms) */
-  transitionDuration: 300
+  transitionDuration: 300,
+  
+  // ==========================================================================
+  // Modal Messages
+  // ==========================================================================
+  
+  /** Message templates for incomplete data modal */
+  incompleteMessages: {
+    generic: "Let's explore a little more to understand you better.",
+    pillar: "Let's explore a little more about your {pillarName}.",
+    cta: "Continue with AIM ONE",
+    benefit: "Easy questions for you. Personalized insights for your growth."
+  }
 };
 
-// Freeze config to prevent accidental modification
-Object.freeze(AIM_CONFIG);
-Object.freeze(AIM_CONFIG.maxCharsByDepth);
-Object.freeze(AIM_CONFIG.pillarColors);
-Object.freeze(AIM_CONFIG.depthAlpha);
-Object.freeze(AIM_CONFIG.alignmentCategories);
-Object.freeze(AIM_CONFIG.poles);
-Object.freeze(AIM_CONFIG.poleMagnitudeLabels);
-Object.freeze(AIM_CONFIG.heatmapTypes);
-Object.freeze(AIM_CONFIG.pillarNames);
-Object.freeze(AIM_CONFIG.projectTypes);
-
-// Export for use in other modules
+// Don't freeze - we have a method that needs to work
+// Instead, just export
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIM_CONFIG;
 }

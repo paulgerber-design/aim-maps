@@ -1,7 +1,7 @@
 /**
  * AIM Viewer Application
  * Main entry point that coordinates all modules
- * v1.0.0
+ * v2.0.0 - Phase 5a: New layout, collapsible sections, AIM ONE integration
  */
 
 const AIMApp = (function() {
@@ -12,6 +12,7 @@ const AIMApp = (function() {
   // ==========================================================================
 
   let elements = {};
+  let showingAlternatives = false;
 
   function cacheElements() {
     elements = {
@@ -19,43 +20,60 @@ const AIMApp = (function() {
       svg: d3.select('#aimChart'),
       tooltip: d3.select('#tooltip'),
       legendContainer: d3.select('#legend'),
-      titleBar: d3.select('#titleBar'),
       titleText: document.getElementById('titleText'),
       breadcrumb: document.getElementById('breadcrumb'),
+      mainContent: document.getElementById('mainContent'),
       
       // Inputs
       fileInput: document.getElementById('csvFileInput'),
       
       // Buttons
       resetBtn: document.getElementById('resetBtn'),
+      refineBtn: document.getElementById('refineBtn'),
       uploadBtn: document.getElementById('uploadBtn'),
       saveBtn: document.getElementById('saveBtn'),
       viewTableBtn: document.getElementById('viewTableBtn'),
-      
-      // Tabs
-      aimTab: document.getElementById('aimTab'),
-      projectsTab: document.getElementById('projectsTab'),
-      
-      // Views
-      aimView: document.getElementById('aimView'),
-      projectsView: document.getElementById('projectsView'),
-      projectsList: document.getElementById('projectsList'),
       
       // Heatmap controls
       heatmapSelect: document.getElementById('heatmapSelect'),
       heatmapInfo: document.getElementById('heatmapInfo'),
       heatmapLegend: document.getElementById('heatmapLegend'),
       
-      // Lenses
-      lensesList: document.getElementById('lensesList'),
+      // Collapsible sections
+      projectsSection: document.getElementById('projectsSection'),
+      projectsToggle: document.querySelector('#projectsSection .section-toggle'),
+      projectsContent: document.getElementById('projectsContent'),
+      projectsList: document.getElementById('projectsList'),
+      projectsCount: document.getElementById('projectsCount'),
+      projectsAlternative: document.getElementById('projectsAlternative'),
+      
+      insightsSection: document.getElementById('insightsSection'),
+      insightsToggle: document.querySelector('#insightsSection .section-toggle'),
+      insightsContent: document.getElementById('insightsContent'),
+      insightOverviewText: document.getElementById('insightOverviewText'),
+      insightsObservations: document.getElementById('insightsObservations'),
+      insightObservationsText: document.getElementById('insightObservationsText'),
+      insightsProjects: document.getElementById('insightsProjects'),
+      insightProjectsText: document.getElementById('insightProjectsText'),
+      
+      // Incomplete modal
+      incompleteModal: document.getElementById('incompleteModal'),
+      incompleteModalTitle: document.getElementById('incompleteModalTitle'),
+      incompleteModalMessage: document.getElementById('incompleteModalMessage'),
+      incompleteModalCta: document.getElementById('incompleteModalCta'),
+      incompleteModalClose: document.getElementById('incompleteModalClose'),
       
       // Table overlay
       tableOverlay: document.getElementById('tableOverlay'),
       closeTableBtn: document.getElementById('closeTableBtn'),
       tableSearchInput: document.getElementById('tableSearch'),
+      tableFilterSelect: document.getElementById('tableFilterSelect'),
       editTitleInput: document.getElementById('editTitleInput'),
       downloadCsvBtn: document.getElementById('downloadCsvBtn'),
-      editDataBtn: document.getElementById('editDataBtn'),
+      dataTabAimBtn: document.getElementById('dataTabAimBtn'),
+      dataTabProjectsBtn: document.getElementById('dataTabProjectsBtn'),
+      nodeTable: document.getElementById('nodeTable'),
+      projectsTable: document.getElementById('projectsTable'),
       nodeTableBody: document.querySelector('#nodeTable tbody'),
       projectsTableBody: document.querySelector('#projectsTable tbody')
     };
@@ -71,11 +89,12 @@ const AIMApp = (function() {
   async function init() {
     cacheElements();
     
-    // Initialize chart renderer with DOM references
+    // Initialize chart renderer with DOM references and callbacks
     AIMChartRenderer.init({
       svg: elements.svg,
       tooltip: elements.tooltip,
-      legendContainer: elements.legendContainer
+      legendContainer: elements.legendContainer,
+      onIncompleteClick: handleIncompleteClick
     });
     
     setupEventListeners();
@@ -113,72 +132,131 @@ const AIMApp = (function() {
       });
     }
     
+    // Refine in AIM ONE button
+    if (elements.refineBtn) {
+      elements.refineBtn.addEventListener('click', () => {
+        const url = AIMUtils.buildAimOneUrl();
+        window.open(url, '_blank');
+      });
+    }
+    
     // Save button
     if (elements.saveBtn) {
       elements.saveBtn.addEventListener('click', downloadCSV);
-    }
-    
-    // Tab switching
-    if (elements.aimTab) {
-      elements.aimTab.addEventListener('click', () => switchTab('aim'));
-    }
-    if (elements.projectsTab) {
-      elements.projectsTab.addEventListener('click', () => switchTab('projects'));
     }
     
     // Heatmap select
     if (elements.heatmapSelect) {
       elements.heatmapSelect.addEventListener('change', (e) => {
         AIMState.setHeatmapType(e.target.value);
-        updateChart();
-        updateHeatmapInfo();
+        updateHeatmapLegend(e.target.value);
       });
     }
     
-    // View data button
+    // View table button
     if (elements.viewTableBtn) {
       elements.viewTableBtn.addEventListener('click', () => {
-        elements.tableOverlay.style.display = 'flex';
-        buildTableView();
+        openTableOverlay();
       });
     }
     
-    // Close table overlay
+    // Close table button
     if (elements.closeTableBtn) {
-      elements.closeTableBtn.addEventListener('click', () => {
-        elements.tableOverlay.style.display = 'none';
+      elements.closeTableBtn.addEventListener('click', closeTableOverlay);
+    }
+    
+    // Table overlay backdrop click
+    if (elements.tableOverlay) {
+      elements.tableOverlay.addEventListener('click', (e) => {
+        if (e.target === elements.tableOverlay) {
+          closeTableOverlay();
+        }
       });
     }
     
-    // Download CSV
+    // Collapsible sections
+    if (elements.projectsToggle) {
+      elements.projectsToggle.addEventListener('click', () => {
+        toggleSection('projects');
+      });
+    }
+    
+    if (elements.insightsToggle) {
+      elements.insightsToggle.addEventListener('click', () => {
+        toggleSection('insights');
+      });
+    }
+    
+    // Alternative projects button
+    if (elements.projectsAlternative) {
+      elements.projectsAlternative.addEventListener('click', () => {
+        showingAlternatives = true;
+        renderProjects();
+        elements.projectsAlternative.style.display = 'none';
+      });
+    }
+    
+    // Incomplete modal
+    if (elements.incompleteModalClose) {
+      elements.incompleteModalClose.addEventListener('click', closeIncompleteModal);
+    }
+    
+    if (elements.incompleteModal) {
+      const backdrop = elements.incompleteModal.querySelector('.modal-backdrop');
+      if (backdrop) {
+        backdrop.addEventListener('click', closeIncompleteModal);
+      }
+    }
+    
+    // Data table tabs
+    if (elements.dataTabAimBtn) {
+      elements.dataTabAimBtn.addEventListener('click', () => {
+        elements.dataTabAimBtn.classList.add('active');
+        elements.dataTabProjectsBtn?.classList.remove('active');
+        if (elements.nodeTable) elements.nodeTable.style.display = '';
+        if (elements.projectsTable) elements.projectsTable.style.display = 'none';
+      });
+    }
+    
+    if (elements.dataTabProjectsBtn) {
+      elements.dataTabProjectsBtn.addEventListener('click', () => {
+        elements.dataTabProjectsBtn.classList.add('active');
+        elements.dataTabAimBtn?.classList.remove('active');
+        if (elements.nodeTable) elements.nodeTable.style.display = 'none';
+        if (elements.projectsTable) elements.projectsTable.style.display = '';
+        renderProjectsTable();
+      });
+    }
+    
+    // Download CSV button
     if (elements.downloadCsvBtn) {
       elements.downloadCsvBtn.addEventListener('click', downloadCSV);
     }
     
-    // Keyboard shortcuts
-    document.addEventListener('keydown', handleKeydown);
+    // Table search
+    if (elements.tableSearchInput) {
+      elements.tableSearchInput.addEventListener('input', AIMUtils.debounce(() => {
+        renderNodeTable();
+      }, 200));
+    }
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (!elements.incompleteModal?.hidden) {
+          closeIncompleteModal();
+        } else if (!elements.tableOverlay?.hidden) {
+          closeTableOverlay();
+        }
+      }
+    });
   }
 
   /**
    * Subscribe to state changes
    */
   function setupStateSubscription() {
-    AIMState.subscribe((type, payload) => {
-      switch (type) {
-        case 'navigation':
-        case 'state':
-          render();
-          updateBreadcrumb();
-          break;
-        case 'heatmap':
-          updateChart();
-          updateHeatmapInfo();
-          break;
-        case 'data':
-          render();
-          break;
-      }
-    });
+    AIMState.subscribe(render);
   }
 
   // ==========================================================================
@@ -189,95 +267,29 @@ const AIMApp = (function() {
    * Load data from URL query parameters
    */
   async function loadFromQuery() {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      
-      // Load from ?csv=filename.csv
-      if (params.has('csv')) {
-        const fileName = params.get('csv');
-        if (fileName) {
-          try {
-            const response = await fetch(fileName);
-            if (response.ok) {
-              const text = await response.text();
-              const rows = d3.csvParse(text);
-              const data = AIMDataParser.parseCSV(rows);
-              AIMState.setData(data);
-              hideNoDataNotice();
-              render();
-              return;
-            }
-          } catch (err) {
-            console.error('Error loading CSV:', err);
-          }
-        }
-      }
-      
-      // Load from ?gist=GIST_ID
-      if (params.has('gist')) {
-        const gistParam = params.get('gist');
-        if (gistParam) {
-          try {
-            const gistUrl = gistParam.startsWith('http') 
-              ? gistParam 
-              : `https://api.github.com/gists/${gistParam}`;
-            
-            const response = await fetch(gistUrl);
-            if (response.ok) {
-              let csvText;
-              
-              if (gistUrl.includes('api.github.com')) {
-                const gistData = await response.json();
-                const files = gistData.files;
-                const fileNames = Object.keys(files);
-                const targetFile = fileNames.find(name => name.endsWith('.csv')) || fileNames[0];
-                
-                if (targetFile && files[targetFile]) {
-                  if (files[targetFile].content) {
-                    csvText = files[targetFile].content;
-                  } else if (files[targetFile].raw_url) {
-                    const rawResponse = await fetch(files[targetFile].raw_url);
-                    csvText = await rawResponse.text();
-                  }
-                }
-              } else {
-                csvText = await response.text();
-              }
-              
-              if (csvText) {
-                const rows = d3.csvParse(csvText);
-                const data = AIMDataParser.parseCSV(rows);
-                AIMState.setData(data);
-                hideNoDataNotice();
-                render();
-                return;
-              }
-            }
-          } catch (err) {
-            console.error('Error loading Gist:', err);
-          }
-        }
-      }
-      
-      // Load from ?data=BASE64
-      if (params.has('data')) {
-        const encoded = params.get('data');
-        if (encoded) {
-          try {
-            const decoded = atob(decodeURIComponent(encoded));
-            const rows = d3.csvParse(decoded);
-            const data = AIMDataParser.parseCSV(rows);
-            AIMState.setData(data);
-            hideNoDataNotice();
+    const params = new URLSearchParams(window.location.search);
+    const gistId = params.get('gist');
+    
+    if (gistId) {
+      try {
+        const response = await fetch(`https://api.github.com/gists/${gistId}`);
+        if (!response.ok) throw new Error('Failed to fetch gist');
+        
+        const gistData = await response.json();
+        const files = gistData.files;
+        const csvFile = Object.values(files).find(f => f.filename.endsWith('.csv'));
+        
+        if (csvFile) {
+          const parsed = AIMDataParser.parseCSV(csvFile.content);
+          if (parsed) {
+            AIMState.setData(parsed);
             render();
-            return;
-          } catch (err) {
-            console.error('Error decoding base64 data:', err);
           }
         }
+      } catch (error) {
+        console.error('Error loading gist:', error);
+        showNoDataNotice('Failed to load data from Gist');
       }
-    } catch (err) {
-      console.error('Error processing query parameters:', err);
     }
   }
 
@@ -285,24 +297,26 @@ const AIMApp = (function() {
    * Handle file upload
    */
   function handleFileUpload(event) {
-    const file = event.target.files[0];
+    const file = event.target.files?.[0];
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const text = e.target.result;
-        const rows = d3.csvParse(text);
-        const data = AIMDataParser.parseCSV(rows);
-        AIMState.setData(data);
-        hideNoDataNotice();
-        render();
-      } catch (err) {
-        console.error('Error parsing CSV:', err);
-        alert('Error parsing CSV file. Please check the format.');
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (typeof content === 'string') {
+        const parsed = AIMDataParser.parseCSV(content);
+        if (parsed) {
+          AIMState.setData(parsed);
+          render();
+        } else {
+          alert('Failed to parse CSV file. Please check the format.');
+        }
       }
     };
     reader.readAsText(file);
+    
+    // Reset input so same file can be uploaded again
+    event.target.value = '';
   }
 
   // ==========================================================================
@@ -314,479 +328,594 @@ const AIMApp = (function() {
    */
   function render() {
     const data = AIMState.getData();
-    if (!data) return;
-    
-    updateTitle();
-    updateBreadcrumb();
-    updateLegend();
-    updateLenses();
-    updateChart();
-    updateHeatmapInfo();
-    
-    if (AIMState.getCurrentTab() === 'projects') {
-      updateProjectsView();
-    }
-  }
-
-  /**
-   * Update page title
-   */
-  function updateTitle() {
-    const data = AIMState.getData();
-    if (!data) return;
-    
-    const name = data.title || '';
-    let pageTitle;
-    if (name) {
-      pageTitle = `AIM: ${name}`;
-    } else {
-      const modeLabel = data.mode === 'personal' ? 'Personal' : 'Business';
-      pageTitle = `AIM: ${modeLabel}`;
+    if (!data) {
+      showNoDataNotice();
+      return;
     }
     
-    document.title = pageTitle;
+    hideNoDataNotice();
+    
+    // Update title
     if (elements.titleText) {
-      elements.titleText.textContent = pageTitle;
-    }
-  }
-
-  /**
-   * Update breadcrumb navigation
-   */
-  function updateBreadcrumb() {
-    if (!elements.breadcrumb) return;
-    
-    const { crumbs } = AIMState.getBreadcrumbData();
-    
-    elements.breadcrumb.innerHTML = crumbs.map((crumb, i) => {
-      const isLast = i === crumbs.length - 1;
-      if (isLast) {
-        return `<span class="current">${crumb.label}</span>`;
-      }
-      return `<a data-index="${i}">${crumb.label}</a><span class="separator">›</span>`;
-    }).join('');
-    
-    // Add click handlers
-    elements.breadcrumb.querySelectorAll('a').forEach((link, i) => {
-      link.addEventListener('click', () => {
-        crumbs[i].action?.();
-      });
-    });
-  }
-
-  /**
-   * Update legend
-   */
-  function updateLegend() {
-    const data = AIMState.getData();
-    if (!data || !elements.legendContainer) return;
-    
-    const legendContainer = elements.legendContainer;
-    legendContainer.selectAll('*').remove();
-    
-    for (let i = 1; i <= 3; i++) {
-      const pillarName = data.pillarNames[i] || `Pillar ${i}`;
-      const color = AIM_CONFIG.pillarColors[i - 1];
-      
-      const chip = legendContainer.append('div')
-        .attr('class', 'legend-chip')
-        .attr('tabindex', '0')
-        .attr('role', 'button')
-        .attr('aria-label', `Focus on ${pillarName}`)
-        .on('click', () => handleLegendClick(i))
-        .on('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            handleLegendClick(i);
-          }
-        });
-      
-      chip.append('div')
-        .attr('class', 'dot')
-        .style('background-color', color);
-      
-      chip.append('span')
-        .text(pillarName);
-      
-      // Highlight selected pillar
-      if (AIMState.getSelectedPillar() === i) {
-        chip.classed('selected', true);
-      }
-    }
-  }
-
-  /**
-   * Handle legend chip click
-   */
-  function handleLegendClick(pillarIdx) {
-    const currentState = AIMState.getState();
-    const selectedPillar = AIMState.getSelectedPillar();
-    
-    if (currentState === 'A') {
-      AIMState.navigateToPillar(pillarIdx);
-    } else if (currentState === 'B' && selectedPillar === pillarIdx) {
-      AIMState.navigateToFullView();
-    } else {
-      AIMState.navigateToPillar(pillarIdx);
-    }
-  }
-
-  /**
-   * Update lenses display
-   */
-  function updateLenses() {
-    const data = AIMState.getData();
-    if (!data || !elements.lensesList) return;
-    
-    const lenses = data.lenses || [];
-    
-    if (lenses.length === 0) {
-      elements.lensesList.textContent = 'No lenses';
-      return;
+      elements.titleText.textContent = data.title || 'AIM';
     }
     
-    elements.lensesList.innerHTML = lenses.map(lens => {
-      const title = lens.title || lens.belief || 'Untitled lens';
-      const pillars = lens.pillars?.length 
-        ? ` (${lens.pillars.map(p => data.pillarNames[p] || p).join(', ')})`
-        : '';
-      return `<div class="lens-item" title="${lens.belief || ''}">${AIMUtils.truncateText(title, 30)}${pillars}</div>`;
-    }).join('');
-  }
-
-  /**
-   * Update heatmap info display
-   */
-  function updateHeatmapInfo() {
-    const type = AIMState.getHeatmapType();
-    const config = AIM_CONFIG.heatmapTypes[type];
+    // Update breadcrumb
+    renderBreadcrumb();
     
-    if (elements.heatmapInfo) {
-      elements.heatmapInfo.title = config?.description || '';
-    }
+    // Render chart
+    AIMChartRenderer.render();
     
-    // Update legend display based on type
-    if (elements.heatmapLegend) {
-      if (type === 'off') {
-        elements.heatmapLegend.innerHTML = '';
-      } else if (type === 'confidence') {
-        elements.heatmapLegend.innerHTML = '<span style="color:#e74c3c">Low</span> → <span style="color:#27ae60">High</span> alignment';
-      } else {
-        const poleConfig = AIM_CONFIG.poles[type];
-        if (poleConfig) {
-          elements.heatmapLegend.innerHTML = `${poleConfig.left.name} ↔ ${poleConfig.right.name}`;
-        }
-      }
-    }
-  }
-
-  /**
-   * Update the sunburst chart
-   */
-  function updateChart() {
-    AIMChartRenderer.updateChart();
-  }
-
-  /**
-   * Update projects view
-   */
-  function updateProjectsView() {
-    const data = AIMState.getData();
-    if (!data || !elements.projectsList) return;
+    // Update legend with completeness info
+    renderLegend();
     
-    const projects = data.projects || [];
+    // Render projects
+    showingAlternatives = false;
+    renderProjects();
     
-    if (projects.length === 0) {
-      elements.projectsList.innerHTML = '<p style="color:#666;">No projects defined.</p>';
-      return;
-    }
+    // Render insights
+    renderInsights();
     
-    // Sort by priority
-    const sorted = [...projects].sort((a, b) => {
-      return AIMUtils.parsePriority(a.priority_user || a.priority_ai) - 
-             AIMUtils.parsePriority(b.priority_user || b.priority_ai);
-    });
-    
-    elements.projectsList.innerHTML = sorted.map(project => {
-      const type = project.type || 'practice';
-      const typeLabel = AIM_CONFIG.projectTypes[type]?.label || type;
-      
-      return `
-        <div class="project-card">
-          <div class="project-header">
-            <strong>${project.action || 'Untitled'}</strong>
-            <span class="project-type">${typeLabel}</span>
-          </div>
-          ${project.benefit ? `<p class="project-benefit">${project.benefit}</p>` : ''}
-          ${project.measure ? `<p class="project-measure">${project.start || 0} → ${project.target || '?'} ${project.measure}</p>` : ''}
-        </div>
-      `;
-    }).join('');
-  }
-
-  /**
-   * Build table view
-   */
-  function buildTableView() {
-    const data = AIMState.getData();
-    if (!data || !elements.nodeTableBody) return;
-
-    const rows = [];
-    
-    // Core
-    rows.push({
-      depth: 0, pillar: '', sub: '', micro: '',
-      label: 'Core',
-      title: data.core.title || '',
-      belief: data.core.belief || '',
-      confidence: data.core.confidence || 50,
-      updated: data.core.updated || ''
-    });
-
-    // Pillars, subs, micros
-    for (let p = 1; p <= 3; p++) {
-      rows.push({
-        depth: 1, pillar: p, sub: '', micro: '',
-        label: data.pillarNames[p] || '',
-        title: data.pillars[p].title || '',
-        belief: data.pillars[p].belief || '',
-        confidence: data.pillars[p].confidence || 50,
-        updated: data.pillars[p].updated || ''
-      });
-
-      for (let s = 1; s <= 3; s++) {
-        rows.push({
-          depth: 2, pillar: p, sub: s, micro: '',
-          label: '',
-          title: data.subs[p][s].title || '',
-          belief: data.subs[p][s].belief || '',
-          confidence: data.subs[p][s].confidence || 50,
-          updated: data.subs[p][s].updated || ''
-        });
-
-        for (let m = 1; m <= 3; m++) {
-          rows.push({
-            depth: 3, pillar: p, sub: s, micro: m,
-            label: '',
-            title: data.micros[p][s][m].title || '',
-            belief: data.micros[p][s][m].belief || '',
-            confidence: data.micros[p][s][m].confidence || 50,
-            updated: data.micros[p][s][m].updated || ''
-          });
-        }
-      }
-    }
-
-    // Lenses
-    if (data.lenses && data.lenses.length > 0) {
-      data.lenses.forEach((lens, idx) => {
-        const pillarNames = lens.pillars?.map(p => data.pillarNames[p] || '').filter(Boolean) || [];
-        rows.push({
-          depth: 4, pillar: '', sub: '', micro: '',
-          label: `Lens ${idx + 1}`,
-          title: lens.title || '',
-          belief: lens.belief || '',
-          confidence: lens.confidence || '',
-          updated: lens.updated || '',
-          applies: pillarNames.join(', ')
-        });
-      });
-    }
-
-    // Populate table
-    elements.nodeTableBody.innerHTML = rows.map(row => `
-      <tr>
-        <td>${row.depth}</td>
-        <td>${row.pillar}</td>
-        <td>${row.sub}</td>
-        <td>${row.micro}</td>
-        <td>${row.title || row.label}</td>
-        <td>${row.belief}</td>
-        <td>${row.confidence}</td>
-        <td>${row.updated ? AIMUtils.formatDateString(row.updated) : ''}</td>
-      </tr>
-    `).join('');
-
-    // Update title input
+    // Update table title input
     if (elements.editTitleInput) {
       elements.editTitleInput.value = data.title || '';
     }
   }
 
-  // ==========================================================================
-  // Tab Switching
-  // ==========================================================================
+  /**
+   * Render breadcrumb navigation
+   */
+  function renderBreadcrumb() {
+    const data = AIMState.getData();
+    const state = AIMState.getState();
+    const selectedPillar = AIMState.getSelectedPillar();
+    const selectedSub = AIMState.getSelectedSub();
+    
+    if (!elements.breadcrumb || !data) return;
+    
+    let html = '<a href="#" data-action="home">AIM</a>';
+    
+    if (state === 'B' && selectedPillar) {
+      const pillarName = data.pillarNames[selectedPillar] || `Pillar ${selectedPillar}`;
+      html += '<span class="separator">›</span>';
+      html += `<span class="current">${pillarName}</span>`;
+    } else if (state === 'C' && selectedPillar && selectedSub) {
+      const pillarName = data.pillarNames[selectedPillar] || `Pillar ${selectedPillar}`;
+      const subData = data.subs[selectedPillar]?.[selectedSub];
+      const subName = subData?.title || `Sub ${selectedSub}`;
+      
+      html += '<span class="separator">›</span>';
+      html += `<a href="#" data-action="pillar" data-pillar="${selectedPillar}">${pillarName}</a>`;
+      html += '<span class="separator">›</span>';
+      html += `<span class="current">${subName}</span>`;
+    }
+    
+    elements.breadcrumb.innerHTML = html;
+    
+    // Add click handlers
+    elements.breadcrumb.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const action = link.dataset.action;
+        if (action === 'home') {
+          AIMState.navigateToFullView();
+        } else if (action === 'pillar') {
+          const pillar = parseInt(link.dataset.pillar);
+          AIMState.navigateToPillar(pillar);
+        }
+      });
+    });
+  }
 
-  function switchTab(tab) {
-    AIMState.setCurrentTab(tab);
+  /**
+   * Render legend with completeness badges
+   */
+  function renderLegend() {
+    const data = AIMState.getData();
+    if (!elements.legendContainer || !data) return;
     
-    elements.aimTab?.classList.toggle('active', tab === 'aim');
-    elements.projectsTab?.classList.toggle('active', tab === 'projects');
+    const completeness = AIMUtils.getOverallCompleteness(data);
+    const selectedPillar = AIMState.getSelectedPillar();
     
-    if (elements.aimView) {
-      elements.aimView.style.display = tab === 'aim' ? 'block' : 'none';
+    let html = '';
+    
+    for (let p = 1; p <= 3; p++) {
+      const name = data.pillarNames[p] || `Pillar ${p}`;
+      const color = AIM_CONFIG.pillarColors[p - 1];
+      const pillarComplete = completeness.pillars[p];
+      const isSelected = selectedPillar === p;
+      
+      html += `
+        <div class="legend-chip ${isSelected ? 'selected' : ''}" data-pillar="${p}" style="--pillar-color: ${color}">
+          <span class="dot" style="background: ${color}"></span>
+          <span class="pillar-name">${name}</span>
+          ${!pillarComplete.complete ? `<span class="incomplete-badge">${pillarComplete.filled}/${pillarComplete.total}</span>` : ''}
+        </div>
+      `;
     }
-    if (elements.projectsView) {
-      elements.projectsView.style.display = tab === 'projects' ? 'block' : 'none';
+    
+    elements.legendContainer.innerHTML = html;
+    
+    // Add click handlers
+    elements.legendContainer.querySelectorAll('.legend-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const pillar = parseInt(chip.dataset.pillar);
+        AIMState.navigateToPillar(pillar);
+      });
+    });
+  }
+
+  /**
+   * Render projects section
+   */
+  function renderProjects() {
+    const data = AIMState.getData();
+    if (!elements.projectsList || !data) return;
+    
+    const state = AIMState.getState();
+    const selectedPillar = AIMState.getSelectedPillar();
+    
+    // Determine which pillar to show projects for
+    let pillarFilter = null;
+    if (state === 'B' || state === 'C') {
+      pillarFilter = selectedPillar;
     }
     
-    if (tab === 'projects') {
-      updateProjectsView();
+    // Get projects
+    let projects;
+    if (pillarFilter) {
+      // Pillar view: show projects for this pillar
+      projects = AIMUtils.getProjectsForPillar(data, pillarFilter);
+    } else {
+      // Overall view: get top project per pillar
+      projects = AIMUtils.getTopProjects(data);
+    }
+    
+    // Limit display
+    const initialDisplay = AIM_CONFIG.projectsInitialDisplay;
+    const expandedDisplay = AIM_CONFIG.projectsExpandedDisplay;
+    
+    let displayProjects = projects;
+    if (!showingAlternatives && projects.length > initialDisplay) {
+      displayProjects = projects.slice(0, initialDisplay);
+    } else if (showingAlternatives) {
+      displayProjects = projects.slice(0, expandedDisplay);
+    }
+    
+    // Update count badge
+    if (elements.projectsCount) {
+      elements.projectsCount.textContent = projects.length;
+    }
+    
+    // Render project cards
+    if (displayProjects.length === 0) {
+      elements.projectsList.innerHTML = '<p class="insight-placeholder">No project recommendations yet. Continue with AIM ONE to unlock personalized recommendations.</p>';
+      if (elements.projectsAlternative) {
+        elements.projectsAlternative.style.display = 'none';
+      }
+    } else {
+      let html = '';
+      
+      displayProjects.forEach(project => {
+        const pillarName = project.pillar ? (data.pillarNames[project.pillar] || `Pillar ${project.pillar}`) : '';
+        const type = project.type || 'practice';
+        const typeLabel = AIM_CONFIG.projectTypes[type]?.label || type;
+        
+        html += `
+          <div class="project-card">
+            <div class="project-card-header">
+              <span class="project-card-title">${project.name || 'Untitled Project'}</span>
+              <span class="project-card-type">${typeLabel}</span>
+            </div>
+            ${project.project_rationale ? `<p class="project-card-rationale">${project.project_rationale}</p>` : ''}
+            ${pillarName ? `<div class="project-card-pillar">${pillarName}</div>` : ''}
+          </div>
+        `;
+      });
+      
+      elements.projectsList.innerHTML = html;
+      
+      // Show/hide alternatives button
+      if (elements.projectsAlternative) {
+        if (!showingAlternatives && projects.length > initialDisplay) {
+          elements.projectsAlternative.style.display = '';
+          elements.projectsAlternative.textContent = "Not quite right? Show alternatives";
+        } else {
+          elements.projectsAlternative.style.display = 'none';
+        }
+      }
+    }
+  }
+
+  /**
+   * Render insights section
+   */
+  function renderInsights() {
+    const data = AIMState.getData();
+    if (!data) return;
+    
+    const state = AIMState.getState();
+    const selectedPillar = AIMState.getSelectedPillar();
+    
+    // Determine which insights to show
+    let insightPrefix = 'insight_';
+    if ((state === 'B' || state === 'C') && selectedPillar) {
+      insightPrefix = `insight_pillar_${selectedPillar}_`;
+    }
+    
+    // Get insight content
+    const overview = data[insightPrefix + 'overview'] || data.insight_overview;
+    const observations = data[insightPrefix + 'observations'] || data.insight_observations;
+    const projectsInsight = data[insightPrefix + 'projects'] || data.insight_projects;
+    
+    // Update overview
+    if (elements.insightOverviewText) {
+      if (overview) {
+        elements.insightOverviewText.textContent = overview;
+        elements.insightOverviewText.classList.remove('insight-placeholder');
+      } else {
+        elements.insightOverviewText.textContent = 'Complete more of your AIM to unlock personalized insights.';
+        elements.insightOverviewText.classList.add('insight-placeholder');
+      }
+    }
+    
+    // Update observations
+    if (elements.insightsObservations && elements.insightObservationsText) {
+      if (observations) {
+        elements.insightObservationsText.textContent = observations;
+        elements.insightsObservations.style.display = '';
+      } else {
+        elements.insightsObservations.style.display = 'none';
+      }
+    }
+    
+    // Update projects insight
+    if (elements.insightsProjects && elements.insightProjectsText) {
+      if (projectsInsight) {
+        elements.insightProjectsText.textContent = projectsInsight;
+        elements.insightsProjects.style.display = '';
+      } else {
+        elements.insightsProjects.style.display = 'none';
+      }
     }
   }
 
   // ==========================================================================
-  // CSV Export
+  // Collapsible Sections
   // ==========================================================================
 
-  function downloadCSV() {
-    const data = AIMState.getData();
-    if (!data) return;
+  /**
+   * Toggle a collapsible section
+   */
+  function toggleSection(section) {
+    let toggle, content;
     
-    // Build CSV rows - simplified version
-    const rows = [];
-    
-    // Meta rows
-    rows.push({ label: 'title', title: '', belief: data.title || '', confidence: '', pillars: '' });
-    rows.push({ label: 'mode', title: '', belief: data.mode || '', confidence: '', pillars: '' });
-    
-    // Pillar names
-    for (let i = 1; i <= 3; i++) {
-      rows.push({ label: `pillar_name:${i}`, title: '', belief: data.pillarNames[i] || '', confidence: '', pillars: '' });
+    if (section === 'projects') {
+      toggle = elements.projectsToggle;
+      content = elements.projectsContent;
+    } else if (section === 'insights') {
+      toggle = elements.insightsToggle;
+      content = elements.insightsContent;
     }
     
+    if (!toggle || !content) return;
+    
+    const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+    
+    toggle.setAttribute('aria-expanded', !isExpanded);
+    content.hidden = isExpanded;
+  }
+
+  // ==========================================================================
+  // Incomplete Modal
+  // ==========================================================================
+
+  /**
+   * Handle click on incomplete wedge
+   */
+  function handleIncompleteClick(info) {
+    if (!elements.incompleteModal) return;
+    
+    // Update modal content
+    const messages = AIM_CONFIG.incompleteMessages;
+    
+    if (elements.incompleteModalTitle) {
+      const title = messages.pillar.replace('{pillarName}', info.pillarName);
+      elements.incompleteModalTitle.textContent = title;
+    }
+    
+    if (elements.incompleteModalMessage) {
+      elements.incompleteModalMessage.textContent = messages.benefit;
+    }
+    
+    // Set up CTA click
+    if (elements.incompleteModalCta) {
+      elements.incompleteModalCta.onclick = () => {
+        const focus = `pillar:${info.pillar}`;
+        const url = AIMUtils.buildAimOneUrl(focus);
+        window.open(url, '_blank');
+        closeIncompleteModal();
+      };
+    }
+    
+    // Show modal
+    elements.incompleteModal.hidden = false;
+  }
+
+  /**
+   * Close incomplete modal
+   */
+  function closeIncompleteModal() {
+    if (elements.incompleteModal) {
+      elements.incompleteModal.hidden = true;
+    }
+  }
+
+  // ==========================================================================
+  // Table Overlay
+  // ==========================================================================
+
+  /**
+   * Open table overlay
+   */
+  function openTableOverlay() {
+    if (elements.tableOverlay) {
+      elements.tableOverlay.hidden = false;
+      renderNodeTable();
+      populateTableFilter();
+    }
+  }
+
+  /**
+   * Close table overlay
+   */
+  function closeTableOverlay() {
+    if (elements.tableOverlay) {
+      elements.tableOverlay.hidden = true;
+    }
+  }
+
+  /**
+   * Populate table filter dropdown
+   */
+  function populateTableFilter() {
+    const data = AIMState.getData();
+    if (!elements.tableFilterSelect || !data) return;
+    
+    let html = '<option value="all">All entries</option>';
+    
+    for (let p = 1; p <= 3; p++) {
+      const name = data.pillarNames[p] || `Pillar ${p}`;
+      html += `<option value="pillar:${p}">${name}</option>`;
+    }
+    
+    elements.tableFilterSelect.innerHTML = html;
+  }
+
+  /**
+   * Render node table
+   */
+  function renderNodeTable() {
+    const data = AIMState.getData();
+    if (!elements.nodeTableBody || !data) return;
+    
+    const searchTerm = elements.tableSearchInput?.value?.toLowerCase() || '';
+    const filter = elements.tableFilterSelect?.value || 'all';
+    
+    let rows = [];
+    
     // Core
-    rows.push({ 
-      label: 'core', 
-      title: data.core.title || '', 
-      belief: data.core.belief || '', 
-      confidence: data.core.confidence || 50, 
-      pillars: '' 
-    });
+    if (filter === 'all') {
+      rows.push({
+        depth: 'Core',
+        pillar: '-',
+        sub: '-',
+        micro: '-',
+        title: data.core.title || '',
+        belief: data.core.belief || '',
+        confidence: data.core.confidence || '',
+        updated: data.core.updated || ''
+      });
+    }
     
     // Pillars, subs, micros
     for (let p = 1; p <= 3; p++) {
-      rows.push({ 
-        label: `pillar:${p}`, 
-        title: data.pillars[p].title || '', 
-        belief: data.pillars[p].belief || '', 
-        confidence: data.pillars[p].confidence || 50, 
-        pillars: '' 
+      if (filter !== 'all' && filter !== `pillar:${p}`) continue;
+      
+      const pillarData = data.pillars[p];
+      rows.push({
+        depth: 'Pillar',
+        pillar: data.pillarNames[p] || p,
+        sub: '-',
+        micro: '-',
+        title: pillarData.title || '',
+        belief: pillarData.belief || '',
+        confidence: pillarData.confidence || '',
+        updated: pillarData.updated || ''
       });
       
       for (let s = 1; s <= 3; s++) {
-        rows.push({ 
-          label: `sub:${p}:${s}`, 
-          title: data.subs[p][s].title || '', 
-          belief: data.subs[p][s].belief || '', 
-          confidence: data.subs[p][s].confidence || 50, 
-          pillars: '' 
+        const subData = data.subs[p][s];
+        rows.push({
+          depth: 'Sub',
+          pillar: data.pillarNames[p] || p,
+          sub: subData.title || s,
+          micro: '-',
+          title: subData.title || '',
+          belief: subData.belief || '',
+          confidence: subData.confidence || '',
+          updated: subData.updated || ''
         });
         
         for (let m = 1; m <= 3; m++) {
-          rows.push({ 
-            label: `micro:${p}:${s}:${m}`, 
-            title: data.micros[p][s][m].title || '', 
-            belief: data.micros[p][s][m].belief || '', 
-            confidence: data.micros[p][s][m].confidence || 50, 
-            pillars: '' 
+          const microData = data.micros[p][s][m];
+          rows.push({
+            depth: 'Micro',
+            pillar: data.pillarNames[p] || p,
+            sub: subData.title || s,
+            micro: microData.title || m,
+            title: microData.title || '',
+            belief: microData.belief || '',
+            confidence: microData.confidence || '',
+            updated: microData.updated || ''
           });
         }
       }
     }
     
-    // Lenses
-    data.lenses?.forEach((lens, idx) => {
-      rows.push({
-        label: `lens:${idx + 1}`,
-        title: lens.title || '',
-        belief: lens.belief || '',
-        confidence: lens.confidence || 50,
-        pillars: lens.pillars?.join(';') || ''
+    // Filter by search
+    if (searchTerm) {
+      rows = rows.filter(row => {
+        return Object.values(row).some(val => 
+          String(val).toLowerCase().includes(searchTerm)
+        );
       });
+    }
+    
+    // Render
+    let html = '';
+    rows.forEach(row => {
+      html += `
+        <tr>
+          <td>${row.depth}</td>
+          <td>${row.pillar}</td>
+          <td>${row.sub}</td>
+          <td>${row.micro}</td>
+          <td>${row.title}</td>
+          <td>${row.belief}</td>
+          <td>${row.confidence}</td>
+          <td>${row.updated}</td>
+        </tr>
+      `;
     });
     
-    // Projects
-    data.projects?.forEach(project => {
-      rows.push({
-        label: 'project',
-        title: project.action || '',
-        belief: project.benefit || '',
-        confidence: '',
-        pillars: '',
-        project_type: project.type || '',
-        project_action: project.action || '',
-        project_measure: project.measure || '',
-        project_start: project.start ?? '',
-        project_target: project.target ?? '',
-        project_days_per_week: project.days ?? '',
-        project_benefit: project.benefit || '',
-        duration: project.duration || ''
-      });
+    elements.nodeTableBody.innerHTML = html;
+  }
+
+  /**
+   * Render projects table
+   */
+  function renderProjectsTable() {
+    const data = AIMState.getData();
+    if (!elements.projectsTableBody || !data) return;
+    
+    const projects = data.projects || [];
+    
+    let html = '';
+    projects.forEach(project => {
+      const pillarName = project.pillar ? (data.pillarNames[project.pillar] || `Pillar ${project.pillar}`) : '-';
+      
+      html += `
+        <tr>
+          <td>${project.name || ''}</td>
+          <td>${project.type || ''}</td>
+          <td>${project.priority_ai || ''}</td>
+          <td>${project.project_rationale || ''}</td>
+          <td>${pillarName}</td>
+        </tr>
+      `;
     });
     
-    const csvContent = d3.csvFormat(rows);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = AIMUtils.sanitizeFilename(data.title) + '.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    elements.projectsTableBody.innerHTML = html || '<tr><td colspan="5">No projects</td></tr>';
   }
 
   // ==========================================================================
-  // Keyboard Handling
+  // Heatmap
   // ==========================================================================
 
-  function handleKeydown(event) {
-    // Escape to go back/close overlay
-    if (event.key === 'Escape') {
-      if (elements.tableOverlay?.style.display === 'flex') {
-        elements.tableOverlay.style.display = 'none';
-      } else {
-        AIMState.navigateUp();
-      }
-      event.preventDefault();
-      return;
+  /**
+   * Update heatmap legend
+   */
+  function updateHeatmapLegend(type) {
+    if (!elements.heatmapLegend) return;
+    
+    const config = AIM_CONFIG.heatmapTypes[type];
+    if (config) {
+      elements.heatmapLegend.textContent = config.description;
+    } else {
+      elements.heatmapLegend.textContent = '';
     }
     
-    // Number keys 1-3 to select pillar
-    if (['1', '2', '3'].includes(event.key)) {
-      const pillar = parseInt(event.key);
-      AIMState.navigateToPillar(pillar);
-      event.preventDefault();
+    // Update info tooltip
+    if (elements.heatmapInfo && config) {
+      elements.heatmapInfo.title = config.description;
     }
+  }
+
+  // ==========================================================================
+  // CSV Download
+  // ==========================================================================
+
+  /**
+   * Download current data as CSV
+   */
+  function downloadCSV() {
+    const data = AIMState.getData();
+    if (!data) return;
+    
+    // Update title from input if present
+    if (elements.editTitleInput) {
+      data.title = elements.editTitleInput.value || data.title;
+    }
+    
+    const csv = AIMDataParser.exportToCSV(data);
+    const filename = AIMUtils.sanitizeFilename(data.title) + '.csv';
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
   }
 
   // ==========================================================================
   // Empty State
   // ==========================================================================
 
-  function showNoDataNotice() {
-    const aimView = document.getElementById('aimView');
-    if (!aimView || document.getElementById('noDataNotice')) return;
+  /**
+   * Show no data notice
+   */
+  function showNoDataNotice(message) {
+    const chartWrapper = document.getElementById('chartWrapper');
+    if (!chartWrapper) return;
     
-    const notice = document.createElement('div');
-    notice.id = 'noDataNotice';
+    // Check if notice already exists
+    let notice = document.getElementById('noDataNotice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'noDataNotice';
+      chartWrapper.appendChild(notice);
+    }
+    
     notice.innerHTML = `
-      <strong>No AIM file found.</strong>
-      <div style="margin-top:6px;">
-        This page is not pointed to an AIM file yet. You can:
-        <ul>
-          <li>Upload an AIM file with the <em>Upload CSV</em> button above</li>
-          <li>Add <code>?csv=your-file.csv</code> to the URL</li>
-          <li>Add <code>?gist=GIST_ID</code> to load from a GitHub Gist</li>
-        </ul>
-      </div>
+      <h3>Welcome to AIM Viewer</h3>
+      <p>${message || 'Upload a CSV file or load from a Gist to visualize your AIM.'}</p>
+      <button class="btn-primary" id="noDataUploadBtn">Upload CSV</button>
+      <p style="margin-top: 16px; font-size: 0.9rem; color: #888;">
+        Or <a href="${AIMUtils.buildAimOneUrl()}" target="_blank">start with AIM ONE</a> to create your first map.
+      </p>
     `;
-    aimView.prepend(notice);
+    
+    // Bind upload button
+    const uploadBtn = document.getElementById('noDataUploadBtn');
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', () => {
+        elements.fileInput?.click();
+      });
+    }
+    
+    notice.style.display = 'block';
   }
 
+  /**
+   * Hide no data notice
+   */
   function hideNoDataNotice() {
     const notice = document.getElementById('noDataNotice');
-    if (notice) notice.remove();
+    if (notice) {
+      notice.style.display = 'none';
+    }
   }
 
   // ==========================================================================
@@ -794,13 +923,11 @@ const AIMApp = (function() {
   // ==========================================================================
 
   return {
-    init,
-    render,
-    downloadCSV
+    init
   };
 })();
 
-// Initialize when DOM is ready
+// Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   AIMApp.init();
 });

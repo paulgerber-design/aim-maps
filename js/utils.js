@@ -1,7 +1,7 @@
 /**
  * AIM Viewer Utilities
  * Helper functions for formatting, labels, and common operations
- * v1.0.0
+ * v2.0.0 - Phase 5a: Updated pole handling, completeness checks
  */
 
 const AIMUtils = (function() {
@@ -62,16 +62,29 @@ const AIMUtils = (function() {
   }
 
   /**
+   * Get the new pole key from legacy key
+   * @param {string} legacyKey - Legacy key (ac, ce, cx, pole_gf, etc.)
+   * @returns {string} - New pole key (adapting, celebrating, connecting)
+   */
+  function mapPoleKey(legacyKey) {
+    if (!legacyKey) return null;
+    const key = legacyKey.toLowerCase();
+    return AIM_CONFIG.poleKeyMap[key] || key;
+  }
+
+  /**
    * Get human-readable phrase for a pole value
    * @param {number} val - Pole value (-3 to +3)
    * @param {string} letter - Orientation letter
-   * @param {string} type - Pole type ('ac', 'ce', 'cx')
+   * @param {string} type - Pole type (new: 'adapting', 'celebrating', 'connecting' or legacy: 'ac', 'ce', 'cx')
    * @returns {string} - Human-readable phrase
    */
   function getPolePhrase(val, letter, type) {
     if (val === null || val === undefined) return '';
     
-    const poleConfig = AIM_CONFIG.poles[type];
+    // Map legacy keys to new keys
+    const mappedType = mapPoleKey(type) || type;
+    const poleConfig = AIM_CONFIG.poles[mappedType];
     if (!poleConfig) return '';
 
     const abs = Math.abs(val);
@@ -93,7 +106,7 @@ const AIMUtils = (function() {
     }
 
     if (abs === 0) {
-      return 'middle';
+      return 'balanced';
     }
     
     return magnitudeLabel && poleName ? `${magnitudeLabel} ${poleName}` : poleName || magnitudeLabel;
@@ -203,22 +216,30 @@ const AIMUtils = (function() {
   }
 
   /**
-   * Parse priority string to numeric value for sorting
-   * @param {string} str - Priority string (e.g., "P0", "P1", "High")
+   * Parse priority - now handles numeric directly
+   * @param {string|number} val - Priority value
    * @returns {number} - Numeric priority (lower = higher priority)
    */
-  function parsePriority(str) {
-    if (!str) return 999;
-    const s = String(str).trim().toLowerCase();
+  function parsePriority(val) {
+    if (val === null || val === undefined) return 999;
     
-    // Handle P-codes
+    // If already a number, return it
+    if (typeof val === 'number') return val;
+    
+    const s = String(val).trim().toLowerCase();
+    
+    // Handle numeric strings
+    const num = parseInt(s);
+    if (!isNaN(num)) return num;
+    
+    // Handle P-codes (legacy)
     const pMatch = s.match(/^p(\d+)/i);
     if (pMatch) return parseInt(pMatch[1]);
     
     // Handle text priorities
-    if (s.includes('top') || s.includes('high') || s === '1') return 0;
-    if (s.includes('medium') || s.includes('mid') || s === '2') return 50;
-    if (s.includes('low') || s === '3') return 100;
+    if (s.includes('top') || s.includes('high')) return 1;
+    if (s.includes('medium') || s.includes('mid')) return 2;
+    if (s.includes('low')) return 3;
     
     return 999;
   }
@@ -251,11 +272,151 @@ const AIMUtils = (function() {
     return parts.join(' › ');
   }
 
+  // ==========================================================================
+  // Completeness Checking
+  // ==========================================================================
+
+  /**
+   * Check if a belief node has content
+   * @param {Object} node - Belief node object
+   * @returns {boolean} - True if node has belief text
+   */
+  function isNodeComplete(node) {
+    if (!node) return false;
+    return !!(node.belief && node.belief.trim().length > 0);
+  }
+
+  /**
+   * Check completeness of a pillar and its children
+   * @param {Object} data - AIM data object
+   * @param {number} pillarIdx - Pillar index (1-3)
+   * @returns {Object} - {complete: boolean, total: number, filled: number}
+   */
+  function getPillarCompleteness(data, pillarIdx) {
+    if (!data) return { complete: false, total: 0, filled: 0 };
+    
+    let total = 0;
+    let filled = 0;
+    
+    // Check pillar itself
+    total++;
+    if (isNodeComplete(data.pillars[pillarIdx])) filled++;
+    
+    // Check subs
+    for (let s = 1; s <= 3; s++) {
+      total++;
+      if (data.subs[pillarIdx] && isNodeComplete(data.subs[pillarIdx][s])) filled++;
+      
+      // Check micros
+      for (let m = 1; m <= 3; m++) {
+        total++;
+        if (data.micros[pillarIdx] && data.micros[pillarIdx][s] && 
+            isNodeComplete(data.micros[pillarIdx][s][m])) {
+          filled++;
+        }
+      }
+    }
+    
+    return {
+      complete: filled === total,
+      total,
+      filled,
+      percentage: Math.round((filled / total) * 100)
+    };
+  }
+
+  /**
+   * Get overall AIM completeness
+   * @param {Object} data - AIM data object
+   * @returns {Object} - {complete: boolean, pillars: {1: {...}, 2: {...}, 3: {...}}}
+   */
+  function getOverallCompleteness(data) {
+    if (!data) return { complete: false, pillars: {} };
+    
+    const pillars = {};
+    let allComplete = true;
+    
+    // Check core
+    const coreComplete = isNodeComplete(data.core);
+    if (!coreComplete) allComplete = false;
+    
+    // Check each pillar
+    for (let p = 1; p <= 3; p++) {
+      pillars[p] = getPillarCompleteness(data, p);
+      if (!pillars[p].complete) allComplete = false;
+    }
+    
+    return {
+      complete: allComplete && coreComplete,
+      coreComplete,
+      pillars
+    };
+  }
+
+  /**
+   * Get projects filtered by pillar
+   * @param {Object} data - AIM data object
+   * @param {number|null} pillarIdx - Pillar index (1-3) or null for all
+   * @returns {Array} - Sorted array of projects
+   */
+  function getProjectsForPillar(data, pillarIdx) {
+    if (!data || !data.projects) return [];
+    
+    let projects = data.projects;
+    
+    // Filter by pillar if specified
+    if (pillarIdx !== null) {
+      projects = projects.filter(p => p.pillar === pillarIdx);
+    }
+    
+    // Sort by priority (numeric, lower = higher priority)
+    return projects.slice().sort((a, b) => {
+      return parsePriority(a.priority_ai) - parsePriority(b.priority_ai);
+    });
+  }
+
+  /**
+   * Get top project recommendations (one per pillar for overall view)
+   * @param {Object} data - AIM data object
+   * @returns {Array} - Array of top projects
+   */
+  function getTopProjects(data) {
+    if (!data || !data.projects) return [];
+    
+    const topByPillar = {};
+    const projects = data.projects.slice().sort((a, b) => {
+      return parsePriority(a.priority_ai) - parsePriority(b.priority_ai);
+    });
+    
+    // Get top project for each pillar
+    for (const project of projects) {
+      const pillar = project.pillar || 0;
+      if (!topByPillar[pillar]) {
+        topByPillar[pillar] = project;
+      }
+    }
+    
+    // Return as array, sorted by pillar
+    return Object.keys(topByPillar)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(k => topByPillar[k]);
+  }
+
+  /**
+   * Build AIM ONE URL with focus parameter
+   * @param {string} focus - Focus string (e.g., 'pillar:1')
+   * @returns {string} - Full AIM ONE URL
+   */
+  function buildAimOneUrl(focus) {
+    return AIM_CONFIG.getAimOneUrl(focus);
+  }
+
   // Public API
   return {
     getAlignmentLabel,
     getAlignmentColor,
     formatDateString,
+    mapPoleKey,
     getPolePhrase,
     computeHeatColor,
     truncateText,
@@ -264,7 +425,13 @@ const AIMUtils = (function() {
     deepClone,
     debounce,
     parsePriority,
-    getBreadcrumb
+    getBreadcrumb,
+    isNodeComplete,
+    getPillarCompleteness,
+    getOverallCompleteness,
+    getProjectsForPillar,
+    getTopProjects,
+    buildAimOneUrl
   };
 })();
 

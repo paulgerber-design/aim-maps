@@ -1,7 +1,7 @@
 /**
  * AIM Viewer Chart Renderer
  * Handles all D3-based sunburst chart visualization
- * v1.0.0
+ * v2.0.0 - Phase 5a: Incomplete indicators, updated pole names
  */
 
 const AIMChartRenderer = (function() {
@@ -18,6 +18,9 @@ const AIMChartRenderer = (function() {
   let svg = null;
   let tooltip = null;
   let legendContainer = null;
+  
+  /** Callback for incomplete wedge clicks */
+  let onIncompleteClick = null;
 
   // ==========================================================================
   // Initialization
@@ -31,6 +34,40 @@ const AIMChartRenderer = (function() {
     svg = refs.svg;
     tooltip = refs.tooltip;
     legendContainer = refs.legendContainer;
+    onIncompleteClick = refs.onIncompleteClick || null;
+    
+    // Add SVG pattern for incomplete segments
+    addIncompletePattern();
+  }
+  
+  /**
+   * Add SVG pattern definition for incomplete segments
+   */
+  function addIncompletePattern() {
+    if (!svg) return;
+    
+    // Check if defs already exists
+    let defs = svg.select('defs');
+    if (defs.empty()) {
+      defs = svg.append('defs');
+    }
+    
+    // Add diagonal stripe pattern
+    const pattern = defs.append('pattern')
+      .attr('id', 'incompletePattern')
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 8)
+      .attr('height', 8);
+    
+    pattern.append('rect')
+      .attr('width', 8)
+      .attr('height', 8)
+      .attr('fill', AIM_CONFIG.incompleteColor || '#e8e8e8');
+    
+    pattern.append('path')
+      .attr('d', 'M-1,1 l2,-2 M0,8 l8,-8 M7,9 l2,-2')
+      .attr('stroke', '#d0d0d0')
+      .attr('stroke-width', 1);
   }
 
   // ==========================================================================
@@ -43,6 +80,11 @@ const AIMChartRenderer = (function() {
    * @returns {string} - Fill color
    */
   function computeFillColor(descriptor) {
+    // Check if this segment is incomplete
+    if (descriptor.incomplete) {
+      return 'url(#incompletePattern)';
+    }
+    
     const pillarColors = AIM_CONFIG.pillarColors;
     const depthAlpha = AIM_CONFIG.depthAlpha;
     const heatmapType = AIMState.getHeatmapType();
@@ -56,17 +98,17 @@ const AIMChartRenderer = (function() {
       return `rgba(${base.r},${base.g},${base.b},${alpha})`;
     }
 
-    // Get the value for heatmap
+    // Get the value for heatmap - support both old and new pole names
     let val = 50;
     if (heatmapType === 'confidence') {
       val = descriptor.confidence || 50;
-    } else if (heatmapType === 'ac') {
+    } else if (heatmapType === 'adapting' || heatmapType === 'ac') {
       const v = descriptor.pole_ac_value;
       val = v !== null && v !== undefined ? ((v + 3) / 6) * 100 : 50;
-    } else if (heatmapType === 'ce') {
+    } else if (heatmapType === 'celebrating' || heatmapType === 'ce') {
       const v = descriptor.pole_ce_value;
       val = v !== null && v !== undefined ? ((v + 3) / 6) * 100 : 50;
-    } else if (heatmapType === 'cx') {
+    } else if (heatmapType === 'connecting' || heatmapType === 'cx') {
       const v = descriptor.pole_cx_value;
       val = v !== null && v !== undefined ? ((v + 3) / 6) * 100 : 50;
     }
@@ -228,6 +270,7 @@ const AIMChartRenderer = (function() {
         const pillarData = aimData.pillars[p];
         const title = pillarData.title || pillarData.belief;
         const label = AIMUtils.truncateText(title, maxCharsByDepth[1]);
+        const isIncomplete = !AIMUtils.isNodeComplete(pillarData);
 
         descriptors.push({
           depth: 1,
@@ -241,7 +284,8 @@ const AIMChartRenderer = (function() {
           belief: pillarData.belief,
           label: label,
           confidence: pillarData.confidence || 50,
-          showLabel: true,
+          showLabel: !isIncomplete,
+          incomplete: isIncomplete,
           pole_ac_value: pillarData.pole_ac_value,
           pole_ac_letter: pillarData.pole_ac_letter,
           pole_ce_value: pillarData.pole_ce_value,
@@ -257,6 +301,7 @@ const AIMChartRenderer = (function() {
           const subData = aimData.subs[p][s];
           const subTitle = subData.title || subData.belief;
           const subLabel = AIMUtils.truncateText(subTitle, maxCharsByDepth[2]);
+          const subIncomplete = !AIMUtils.isNodeComplete(subData);
 
           descriptors.push({
             depth: 2,
@@ -271,6 +316,7 @@ const AIMChartRenderer = (function() {
             label: subLabel,
             confidence: subData.confidence || 50,
             showLabel: false,
+            incomplete: subIncomplete,
             pole_ac_value: subData.pole_ac_value,
             pole_ac_letter: subData.pole_ac_letter,
             pole_ce_value: subData.pole_ce_value,
@@ -286,6 +332,7 @@ const AIMChartRenderer = (function() {
             const microData = aimData.micros[p][s][m];
             const microTitle = microData.title || microData.belief;
             const microLabel = AIMUtils.truncateText(microTitle, maxCharsByDepth[3]);
+            const microIncomplete = !AIMUtils.isNodeComplete(microData);
 
             descriptors.push({
               depth: 3,
@@ -300,6 +347,7 @@ const AIMChartRenderer = (function() {
               label: microLabel,
               confidence: microData.confidence || 50,
               showLabel: false,
+              incomplete: microIncomplete,
               pole_ac_value: microData.pole_ac_value,
               pole_ac_letter: microData.pole_ac_letter,
               pole_ce_value: microData.pole_ce_value,
@@ -322,6 +370,7 @@ const AIMChartRenderer = (function() {
         const subData = aimData.subs[p][s];
         const subTitle = subData.title || subData.belief;
         const subLabel = AIMUtils.truncateText(subTitle, maxCharsByDepth[2]);
+        const subIncomplete = !AIMUtils.isNodeComplete(subData);
 
         descriptors.push({
           depth: 2,
@@ -335,7 +384,8 @@ const AIMChartRenderer = (function() {
           belief: subData.belief,
           label: subLabel,
           confidence: subData.confidence || 50,
-          showLabel: true,
+          showLabel: !subIncomplete,
+          incomplete: subIncomplete,
           pole_ac_value: subData.pole_ac_value,
           pole_ac_letter: subData.pole_ac_letter,
           pole_ce_value: subData.pole_ce_value,
@@ -352,6 +402,7 @@ const AIMChartRenderer = (function() {
           const microData = aimData.micros[p][s][m];
           const microTitle = microData.title || microData.belief;
           const microLabel = AIMUtils.truncateText(microTitle, maxCharsByDepth[3]);
+          const microIncomplete = !AIMUtils.isNodeComplete(microData);
 
           descriptors.push({
             depth: 3,
@@ -748,6 +799,20 @@ const AIMChartRenderer = (function() {
   function handleArcClick(d) {
     const currentState = AIMState.getState();
     const selectedPillar = AIMState.getSelectedPillar();
+    const aimData = AIMState.getData();
+
+    // If clicking on an incomplete segment, trigger the incomplete callback
+    if (d.incomplete && onIncompleteClick) {
+      const pillarName = aimData ? (aimData.pillarNames[d.pillar] || `Pillar ${d.pillar}`) : `Pillar ${d.pillar}`;
+      onIncompleteClick({
+        pillar: d.pillar,
+        pillarName: pillarName,
+        sub: d.sub,
+        micro: d.micro,
+        depth: d.depth
+      });
+      return;
+    }
 
     if (currentState === 'A') {
       if (d.depth === 1) {
