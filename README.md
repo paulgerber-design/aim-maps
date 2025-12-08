@@ -1,139 +1,129 @@
-# AIM Viewer — Refactored Architecture
+# AIM Viewer - Phase 5a
 
 ## Overview
 
-The original monolithic `index.html` (4,321 lines) has been split into modular files for better maintainability and AI-assisted development.
+Phase 5a introduces a new user-focused layout with collapsible sections, incomplete data indicators, and AIM ONE integration.
 
-## File Structure
+## What's New
 
-```
-aim-viewer-refactored/
-├── index.html           # Clean HTML structure only (~160 lines)
-├── css/
-│   └── styles.css       # All CSS extracted (~470 lines)
-└── js/
-    ├── config.js        # Centralized constants & settings (~180 lines)
-    ├── utils.js         # Helper functions (~275 lines)
-    ├── data-parser.js   # CSV parsing logic (~420 lines)
-    ├── state-manager.js # Application state (~315 lines)
-    ├── chart-renderer.js # D3 sunburst visualization (~700 lines)
-    └── app.js           # Main application logic (~550 lines)
-```
+### 1. New Page Layout
+- **Single-page flow**: AIM sunburst → Project Recommendations → Insights
+- **Collapsible sections**: Projects and Insights are collapsed by default
+- **Breadcrumb navigation**: Easy navigation between pillar views
 
-## Module Descriptions
+### 2. Incomplete Data Indicators
+- Visual pattern overlay on segments without belief text
+- Click incomplete segment → Modal with "Continue in AIM ONE" option
+- Legend shows completion progress (e.g., "4/13") for each pillar
 
-### `config.js` — AIM_CONFIG
-Centralized configuration object containing:
-- Display settings (max chars, line gaps)
-- Colors (pillar colors, depth alpha values)
-- Alignment categories with labels and colors
-- Pole definitions (ac, ce, cx axes)
-- Heatmap type definitions
-- Mode-specific pillar names
-- Animation settings
+### 3. Renamed Pole Axes
+| Old Name | New Name |
+|----------|----------|
+| Adaptive Challenge | Adapting |
+| Celebration | Celebrating |
+| Collective Experience | Connecting |
 
-### `utils.js` — AIMUtils
-Helper functions:
-- `getAlignmentLabel(val)` — Get category label for confidence value
-- `formatDateString(str)` — Format ISO dates for display
-- `getPolePhrase(val, letter, type)` — Human-readable pole descriptions
-- `computeHeatColor(conf)` — Calculate heatmap color
-- `truncateText(text, maxChars)` — Truncate with ellipsis
-- `wrapLines(text, maxLen)` — Word-wrap text
-- `parsePriority(str)` — Parse priority strings for sorting
-- `getBreadcrumb(data, pillar, sub, micro)` — Generate breadcrumb path
+Pole endpoints remain the same:
+- **Adapting**: Fixed ↔ Guided
+- **Celebrating**: Results ↔ Practice
+- **Connecting**: Autonomous ↔ Synchronized
 
-### `data-parser.js` — AIMDataParser
-CSV parsing:
-- `parseCSV(rows)` — Main parser, converts CSV rows to AIM data structure
-- `parsePole(str)` — Parse combined pole format (e.g., "2G")
-- `parseSplitPole(scoreStr, labelStr)` — Parse separate score/label columns
-- Handles all row types: title, mode, pillar_name, core, pillar, sub, micro, lens, project
+### 4. Project Recommendations
+- Shows top project per pillar (overall view) or top project for selected pillar
+- "Not quite right? Show alternatives" reveals additional options
+- New `project_rationale` field for explaining why each project is recommended
 
-### `state-manager.js` — AIMState
-Application state management:
-- Navigation state (A/B/C views, selected pillar/sub)
-- Heatmap type
-- Editing mode
-- Current tab
-- Event subscription system for reactive updates
-- Navigation actions (navigateToFullView, navigateToPillar, navigateToSub)
+### 5. AIM ONE Integration
+- "Refine in AIM ONE" button in header (pencil icon)
+- Clicking incomplete segments opens modal with AIM ONE link
+- URL includes focus parameter: `?focus=pillar:1`
 
-### `chart-renderer.js` — AIMChartRenderer
-D3 sunburst visualization:
-- `init(refs)` — Initialize with DOM references
-- `updateChart()` — Main rendering function
-- `computeRadii()` — Calculate ring dimensions for each state
-- `computeArcDescriptors()` — Generate arc data for current view
-- `drawSeparators(g)` — Draw divider lines between wedges
-- `drawCenterText(g)` — Core/pillar/sub belief display
-- `drawArcLabels(g, descriptors)` — Text labels on arcs
-- `addCenterHover(g)` — Center tooltip interaction
-- `handleArcClick(d)` — Navigation on wedge click
-- Tooltip functions (show, move, hide)
-- Legend highlight effects
-- Flash ring animation
+### 6. New CSV Schema Fields
+```csv
+# Project fields
+project_rationale  # Why this project is recommended
 
-### `app.js` — AIMApp
-Main application:
-- DOM element caching
-- Event listener setup
-- Data loading from URL parameters (?csv=, ?gist=, ?data=)
-- File upload handling
-- Rendering coordination
-- CSV export
-- Keyboard shortcuts
-- Table view building
+# Insight fields (12 total)
+insight_overview
+insight_observations
+insight_projects
+insight_pillar_1_overview
+insight_pillar_1_observations
+insight_pillar_1_projects
+insight_pillar_2_overview
+insight_pillar_2_observations
+insight_pillar_2_projects
+insight_pillar_3_overview
+insight_pillar_3_observations
+insight_pillar_3_projects
 
-## Usage
-
-### Development
-Serve the directory with any static file server:
-```bash
-npx serve aim-viewer-refactored
-# or
-python -m http.server 8000
+# Priority now supports numeric
+priority_ai  # Can be 1, 2, 3 (numeric) or P0, P1 (legacy)
 ```
 
-### Deployment
-Upload all files maintaining the directory structure to your web host.
+## Installation
 
-### For GitHub Pages
-The file structure works directly with GitHub Pages. Just push to your repo.
+1. **Replace existing viewer files:**
+   ```
+   aim-viewer/
+   ├── index.html
+   ├── css/
+   │   └── styles.css
+   └── js/
+       ├── config.js      (updated: poles renamed, AIM ONE config)
+       ├── utils.js       (updated: completeness checks)
+       ├── data-parser.js (updated: insight fields, project_rationale)
+       ├── state-manager.js
+       ├── chart-renderer.js (updated: incomplete indicators)
+       └── app.js         (new: complete rewrite for new layout)
+   ```
 
-## Benefits of This Architecture
+2. **Update AIM ONE Project ID** (if different):
+   Edit `js/config.js` line ~152:
+   ```javascript
+   aimOneProjectId: '019ac79c-20d1-73ea-8e1e-05d90fbbdd94',
+   ```
 
-1. **Easier AI Assistance** — Each module is focused and under 700 lines
-2. **Clear Separation** — CSS, config, logic, state, and rendering are isolated
-3. **Testable** — Modules can be tested independently
-4. **Maintainable** — Changes to one area don't require understanding the whole codebase
-5. **Extensible** — New features can be added as new modules
+## Testing
 
-## Migration Checklist
+Load the viewer with your test Gist:
+```
+index.html?gist=cdd870479c1c83443d52db0b11e4b712
+```
 
-- ✅ Extract CSS → `styles.css`
-- ✅ Extract config → `config.js`
-- ✅ Extract utilities → `utils.js`
-- ✅ Extract data parsing → `data-parser.js`
-- ✅ Extract state management → `state-manager.js`
-- ✅ Extract chart rendering → `chart-renderer.js`
-- ✅ Create app shell → `app.js`
+### Test Checklist
+- [ ] Incomplete segments show diagonal pattern
+- [ ] Clicking incomplete segment opens modal
+- [ ] "Continue with AIM ONE" button opens Claude project
+- [ ] Breadcrumb shows pillar name when drilled in
+- [ ] Legend shows completion badges (e.g., "4/13")
+- [ ] Projects section collapses/expands
+- [ ] Insights section collapses/expands
+- [ ] "Refine in AIM ONE" button opens Claude project
+- [ ] Heatmap dropdown shows new pole names
 
-## Comparison
+## Files Changed
 
-| Metric | Original | Refactored |
-|--------|----------|------------|
-| Files | 1 | 8 |
-| Total lines | 4,321 | ~3,070 |
-| Largest file | 4,321 | ~700 |
-| CSS in JS | Mixed | Separated |
-| Config scattered | Yes | Centralized |
-| State management | Global vars | Module |
-| Chart code | Inline | Dedicated module |
+| File | Changes |
+|------|---------|
+| `index.html` | Complete restructure - removed tabs, added collapsible sections, modal |
+| `css/styles.css` | New layout styles, modal, collapsible sections, incomplete indicators |
+| `js/config.js` | Renamed poles, AIM ONE config, incomplete messages |
+| `js/utils.js` | Added completeness checking functions |
+| `js/data-parser.js` | Added insight fields, project_rationale, numeric priority parsing |
+| `js/chart-renderer.js` | Added incomplete pattern, onClick callback |
+| `js/app.js` | Complete rewrite for new architecture |
+| `js/state-manager.js` | No changes (copied from previous) |
 
-## URL Parameters
+## Next Steps (Phase 5b)
 
-The viewer supports loading data via URL parameters:
-- `?csv=filename.csv` — Load from a local/relative CSV file
-- `?gist=GIST_ID` — Load from a GitHub Gist
-- `?data=BASE64` — Load from base64-encoded CSV data
+1. Update AIM ONE instruction files with:
+   - New CSV fields (`project_rationale`, 12 insight fields)
+   - Instructions for generating insights
+   - Pole philosophy content
+
+2. Update AIM ONE CSV schema documentation
+
+---
+
+*Version 2.0.0 - Phase 5a*
