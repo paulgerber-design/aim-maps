@@ -16,6 +16,11 @@
           <path d="M12 3l10 9h-3v9h-5v-6h-2v6H6v-9H3l9-9z" fill="currentColor"/>
         </svg>
       </button>
+      <button id="refineBtn" class="iconButton" aria-label="Refine in AIM ONE" title="Refine in AIM ONE">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+        </svg>
+      </button>
       <button id="saveBtn" class="iconButton" aria-label="Save" title="Save CSV">
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M17 17H7v-2h10v2zm0-4H7V11h10v2zm0-4H7V7h10v2zm3-5H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 20V6h16v14H4z" fill="currentColor"/>
@@ -35,111 +40,146 @@
   </header>
 
   <!-- Breadcrumb Navigation -->
-  <nav id="breadcrumb" aria-label="Breadcrumb"></nav>
+  <nav id="breadcrumb" aria-label="Breadcrumb">
+    <a href="#" data-action="home">AIM</a>
+  </nav>
 
-  <!-- View Tabs -->
-  <div id="tabBar">
-    <button id="aimTab" class="tabButton active" aria-label="Show AIM view">AIM</button>
-    <button id="projectsTab" class="tabButton" aria-label="Show projects view">Projects</button>
-  </div>
-
-  <!-- AIM View -->
-  <div id="aimView">
-    <div id="container">
-      <div id="chartWrapper">
-        <svg id="aimChart" role="img" aria-label="Aspirational Identity Map"></svg>
-      </div>
-      <div id="sidebar">
-        <div id="legend" aria-label="Pillar legend"></div>
-        
-        <!-- Heatmap Controls -->
-        <div id="heatmapToggleContainer">
-          <div style="display:flex; align-items:center; gap:4px;">
-            <label for="heatmapSelect" style="font-weight:600; margin:0;">Heatmap</label>
-            <span id="heatmapInfo" class="info-icon" title="">i</span>
-          </div>
-          <select id="heatmapSelect" aria-label="Select heatmap type">
-            <option value="off">Off</option>
-            <option value="confidence">Alignment</option>
-            <option value="ac">Adaptive challenge</option>
-            <option value="ce">Celebration</option>
-            <option value="cx">Collective experience</option>
-          </select>
-          <div id="heatmapLegend"></div>
+  <!-- Main Content Area (replaces old tab-based layout) -->
+  <main id="mainContent">
+    
+    <!-- Sunburst Chart Section -->
+    <section id="chartSection">
+      <div id="chartContainer">
+        <div id="chartWrapper">
+          <svg id="aimChart" role="img" aria-label="Aspirational Identity Map"></svg>
         </div>
-
-        <!-- Lenses -->
-        <div id="lensesBlock" aria-label="Lenses section">
-          <div style="display:flex; align-items:center; gap:4px; font-weight:600; margin-bottom:4px;">
-            <span id="lensesTitle">Lenses</span>
-            <span id="lensesInfo" class="info-icon" title="A Lens is an enjoyable entry point you feel drawn to.">i</span>
+        <aside id="chartSidebar">
+          <div id="legend" aria-label="Pillar legend"></div>
+          
+          <!-- Heatmap Controls -->
+          <div id="heatmapToggleContainer">
+            <div class="control-header">
+              <label for="heatmapSelect">Heatmap</label>
+              <span id="heatmapInfo" class="info-icon" title="">i</span>
+            </div>
+            <select id="heatmapSelect" aria-label="Select heatmap type">
+              <option value="off">Off</option>
+              <option value="confidence">Alignment</option>
+              <option value="adapting">Adapting</option>
+              <option value="celebrating">Celebrating</option>
+              <option value="connecting">Connecting</option>
+            </select>
+            <div id="heatmapLegend"></div>
           </div>
-          <div id="lensesList">No lenses</div>
-        </div>
-
-        <input type="file" id="csvFileInput" accept=".csv" style="display:none" aria-label="CSV file input">
+        </aside>
       </div>
-    </div>
-  </div>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none" aria-label="CSV file input">
+    </section>
 
-  <!-- Projects View -->
-  <div id="projectsView">
-    <h2>Projects</h2>
-    <div id="projectsList"></div>
-    <button id="showMoreProjectsBtn">Show more</button>
-    <button id="showLessProjectsBtn">Show less</button>
-  </div>
+    <!-- Project Recommendations Section (Collapsible) -->
+    <section id="projectsSection" class="collapsible-section">
+      <button class="section-toggle" aria-expanded="false" aria-controls="projectsContent">
+        <span class="toggle-icon">▶</span>
+        <span class="section-title">Project Recommendations</span>
+        <span id="projectsCount" class="section-badge">0</span>
+      </button>
+      <div id="projectsContent" class="section-content" hidden>
+        <div id="projectsList"></div>
+        <button id="projectsAlternative" class="alternative-btn" style="display:none;">
+          Not quite right? Show alternatives
+        </button>
+      </div>
+    </section>
+
+    <!-- Insights Section (Collapsible) -->
+    <section id="insightsSection" class="collapsible-section">
+      <button class="section-toggle" aria-expanded="false" aria-controls="insightsContent">
+        <span class="toggle-icon">▶</span>
+        <span class="section-title">Insights</span>
+      </button>
+      <div id="insightsContent" class="section-content" hidden>
+        <div id="insightsOverview" class="insight-block">
+          <p id="insightOverviewText">Complete more of your AIM to unlock personalized insights.</p>
+        </div>
+        <div id="insightsObservations" class="insight-block" style="display:none;">
+          <h4>Observations</h4>
+          <p id="insightObservationsText"></p>
+        </div>
+        <div id="insightsProjects" class="insight-block" style="display:none;">
+          <h4>Why These Recommendations</h4>
+          <p id="insightProjectsText"></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
 
   <!-- Tooltip -->
   <div id="tooltip" role="tooltip" aria-hidden="true"></div>
 
-  <!-- Table Overlay -->
-  <div id="tableOverlay" role="dialog" aria-modal="true" aria-label="AIM table view">
+  <!-- Incomplete Data Modal -->
+  <div id="incompleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="incompleteModalTitle" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <h2 id="incompleteModalTitle">Let's explore a little more</h2>
+      <p id="incompleteModalMessage">Easy questions for you. Personalized insights for your growth.</p>
+      <div class="modal-actions">
+        <button id="incompleteModalCta" class="btn-primary">Continue with AIM ONE</button>
+        <button id="incompleteModalClose" class="btn-secondary">Maybe later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Overlay (Data View) -->
+  <div id="tableOverlay" role="dialog" aria-modal="true" aria-label="AIM table view" hidden>
     <div class="tableContainer">
-      <button id="closeTableBtn">Close</button>
-      
-      <div style="margin:6px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <label for="editTitleInput" style="font-size:0.85rem;">Name:</label>
-        <input type="text" id="editTitleInput" placeholder="Enter map name">
-        <button id="downloadCsvBtn" class="iconButton" aria-label="Save CSV" title="Save CSV">
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 2v14m0 0l-5-5m5 5l5-5M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          </svg>
-        </button>
-        <button id="editDataBtn" class="iconButton" aria-label="Edit data" title="Edit data">
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+      <div class="table-header">
+        <h2>Data View</h2>
+        <button id="closeTableBtn" class="iconButton" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
           </svg>
         </button>
       </div>
-
-      <div style="margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <select id="tableFilterSelect">
-          <option value="all">All entries</option>
-        </select>
-        <input type="search" id="tableSearch" placeholder="Search..." aria-label="Search">
+      
+      <div class="table-controls">
+        <div class="control-row">
+          <label for="editTitleInput">Name:</label>
+          <input type="text" id="editTitleInput" placeholder="Enter map name">
+          <button id="downloadCsvBtn" class="iconButton" aria-label="Save CSV" title="Save CSV">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2v14m0 0l-5-5m5 5l5-5M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+        </div>
+        <div class="control-row">
+          <select id="tableFilterSelect">
+            <option value="all">All entries</option>
+          </select>
+          <input type="search" id="tableSearch" placeholder="Search..." aria-label="Search">
+        </div>
       </div>
 
-      <div id="editNote">Changes only persist for this session. Download CSV to save.</div>
-      
       <div id="dataTabBar">
         <button id="dataTabAimBtn" class="tabButton active">Beliefs</button>
         <button id="dataTabProjectsBtn" class="tabButton">Projects</button>
       </div>
 
-      <table id="nodeTable">
-        <thead>
-          <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Title</th><th>Belief</th><th>Confidence</th><th>Updated</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-scroll">
+        <table id="nodeTable">
+          <thead>
+            <tr><th>Depth</th><th>Pillar</th><th>Sub</th><th>Micro</th><th>Title</th><th>Belief</th><th>Confidence</th><th>Updated</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
 
-      <table id="projectsTable" style="display:none;">
-        <thead>
-          <tr><th>Name</th><th>Type</th><th>Measure</th><th>Start</th><th>Target</th><th>Days/wk</th><th>Duration</th><th>Benefit</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+        <table id="projectsTable" style="display:none;">
+          <thead>
+            <tr><th>Name</th><th>Type</th><th>Priority</th><th>Rationale</th><th>Pillar</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
