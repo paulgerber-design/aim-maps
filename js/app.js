@@ -351,7 +351,7 @@ const AIMApp = (function() {
     renderBreadcrumb();
     
     // Render chart
-    AIMChartRenderer.render();
+    AIMChartRenderer.updateChart();
     
     // Update legend with completeness info
     renderLegend();
