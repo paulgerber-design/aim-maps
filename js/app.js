@@ -268,10 +268,10 @@ const AIMApp = (function() {
 
   /**
    * Open AIM ONE with current Gist context
-   * Uses Claude's ?q= parameter to pre-fill the message
+   * Copies the viewer URL to clipboard so user can paste it in AIM ONE
    */
   function openAimOne(focusPillar) {
-    // Build the viewer URL that will be sent to AIM ONE
+    // Build the viewer URL that user will paste into AIM ONE
     let viewerUrl = window.location.origin + window.location.pathname;
     
     if (currentGistId) {
@@ -282,25 +282,64 @@ const AIMApp = (function() {
       viewerUrl += (currentGistId ? '&' : '?') + 'pillar=' + focusPillar;
     }
     
-    // Get the base AIM ONE URL
-    const aimOneBase = AIM_CONFIG.getAimOneUrl();
+    // Copy to clipboard
+    navigator.clipboard.writeText(viewerUrl).then(() => {
+      showToast('Link copied! Paste it in AIM ONE to continue.');
+    }).catch(() => {
+      // Fallback: show the URL in an alert
+      showToast('Copy this link: ' + viewerUrl);
+    });
     
-    // Check if it's a project URL or regular claude.ai
-    // Projects: claude.ai/project/{id}
-    // Regular: claude.ai/new
+    // Open AIM ONE
+    window.open(AIM_CONFIG.getAimOneUrl(), '_blank');
+  }
+
+  /**
+   * Show a temporary toast notification
+   */
+  function showToast(message) {
+    // Remove existing toast if any
+    const existing = document.getElementById('aimToast');
+    if (existing) existing.remove();
     
-    let targetUrl;
-    if (aimOneBase.includes('/project/')) {
-      // For projects, we need to append /new and add ?q=
-      // Format: claude.ai/project/{id}/new?q=MESSAGE
-      const projectBase = aimOneBase.replace(/\/$/, ''); // Remove trailing slash if any
-      targetUrl = projectBase + '?q=' + encodeURIComponent(viewerUrl);
-    } else {
-      // For regular claude.ai, use /new?q=
-      targetUrl = 'https://claude.ai/new?q=' + encodeURIComponent(viewerUrl);
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.id = 'aimToast';
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: toastFade 3s ease-in-out forwards;
+    `;
+    
+    // Add animation style if not exists
+    if (!document.getElementById('toastStyle')) {
+      const style = document.createElement('style');
+      style.id = 'toastStyle';
+      style.textContent = `
+        @keyframes toastFade {
+          0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+          10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+      `;
+      document.head.appendChild(style);
     }
     
-    window.open(targetUrl, '_blank');
+    document.body.appendChild(toast);
+    
+    // Remove after animation
+    setTimeout(() => toast.remove(), 3000);
   }
 
   // ==========================================================================
