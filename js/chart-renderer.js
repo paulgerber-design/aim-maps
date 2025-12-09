@@ -184,7 +184,8 @@ const AIMChartRenderer = (function() {
       : Math.max(containerWidth - sidebarWidth - 32, 300);
     
     const headerHeight = titleBarEl ? titleBarEl.getBoundingClientRect().height : 0;
-    let availableHeight = Math.max(window.innerHeight - headerHeight - 40, 300);
+    // Reduce available height to ensure chart fits without scrolling
+    let availableHeight = Math.max(window.innerHeight - headerHeight - 120, 280);
     
     const size = Math.min(availableWidth, availableHeight);
     
