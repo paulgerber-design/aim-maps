@@ -216,8 +216,39 @@ svg#aimChart {
 #heatmapLegend {
   font-size: 0.75rem;
   color: #666;
-  margin-top: 6px;
+  margin-top: 8px;
   line-height: 1.4;
+}
+
+.heatmap-scale {
+  margin-top: 4px;
+}
+
+.scale-bar {
+  height: 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.scale-bar.confidence-scale {
+  background: linear-gradient(to right, #e74c3c, #e67e22, #f1c40f, #2ecc71, #27ae60);
+}
+
+.scale-bar.pole-scale {
+  /* Blue → Green → Orange */
+  background: linear-gradient(to right, #5c7cfa, #51cf66, #ffa94d);
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #888;
+}
+
+.scale-labels .scale-center {
+  color: #2e7d32;
+  font-weight: 500;
 }
 
 .info-icon {
