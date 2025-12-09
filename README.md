@@ -1,10 +1,30 @@
-# AIM Viewer - Phase 5a
+# AIM Viewer - Phase 5b
 
 ## Overview
 
-Phase 5a introduces a new user-focused layout with collapsible sections, incomplete data indicators, and AIM ONE integration.
+Phase 5b enhances project cards with full details and improves mobile responsiveness.
 
-## What's New
+## What's New in Phase 5b
+
+### 1. Enhanced Project Cards
+- **Action name**: Shows the specific action to take
+- **Measure display**: "10 → 30 minutes, 3×/week" format
+- **Benefit text**: Why this project matters (italicized)
+- **Duration**: For sprint-type projects
+- **Pillar accent**: Color-coded left border matching pillar color
+- **Type badges**: Practice (green) vs Sprint (blue)
+
+### 2. Improved Mobile Experience
+- Responsive project cards (stacked header on small screens)
+- Better legend chip sizing
+- Improved breadcrumb wrapping
+- Toast notifications centered on mobile
+
+### 3. Bug Fixes
+- Fixed empty state message not showing in Projects section
+- Fixed legendContainer d3 selection issue
+
+## Previous Features (Phase 5a)
 
 ### 1. New Page Layout
 - **Single-page flow**: AIM sunburst → Project Recommendations → Insights
@@ -126,4 +146,4 @@ index.html?gist=cdd870479c1c83443d52db0b11e4b712
 
 ---
 
-*Version 2.0.0 - Phase 5a*
+*Version 2.2.0 - Phase 5b*
