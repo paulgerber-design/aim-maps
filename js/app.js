@@ -20,7 +20,7 @@ const AIMApp = (function() {
       // Main containers
       svg: d3.select('#aimChart'),
       tooltip: d3.select('#tooltip'),
-      legendContainer: d3.select('#legend'),
+      legendContainer: document.getElementById('legend'),
       titleText: document.getElementById('titleText'),
       breadcrumb: document.getElementById('breadcrumb'),
       mainContent: document.getElementById('mainContent'),
@@ -474,10 +474,14 @@ const AIMApp = (function() {
   function renderProjects() {
     const data = AIMState.getData();
     
-    // Try to get projectsList, fallback to projectsContent
+    // Try to get projectsList, fallback to direct DOM query
     const container = elements.projectsList || document.getElementById('projectsList');
-    if (!container || !data) {
-      console.warn('renderProjects: No container or data');
+    if (!container) {
+      console.warn('renderProjects: projectsList container not found');
+      return;
+    }
+    if (!data) {
+      console.warn('renderProjects: no data');
       return;
     }
     
@@ -490,19 +494,22 @@ const AIMApp = (function() {
       pillarFilter = selectedPillar;
     }
     
-    // Get projects
-    let projects;
-    if (pillarFilter) {
-      // Pillar view: show projects for this pillar
-      projects = AIMUtils.getProjectsForPillar(data, pillarFilter);
-    } else {
-      // Overall view: get top project per pillar
-      projects = AIMUtils.getTopProjects(data);
+    // Get projects - ensure we always get an array
+    let projects = [];
+    try {
+      if (pillarFilter) {
+        projects = AIMUtils.getProjectsForPillar(data, pillarFilter) || [];
+      } else {
+        projects = AIMUtils.getTopProjects(data) || [];
+      }
+    } catch (e) {
+      console.warn('Error getting projects:', e);
+      projects = [];
     }
     
     // Limit display
-    const initialDisplay = AIM_CONFIG.projectsInitialDisplay;
-    const expandedDisplay = AIM_CONFIG.projectsExpandedDisplay;
+    const initialDisplay = AIM_CONFIG.projectsInitialDisplay || 3;
+    const expandedDisplay = AIM_CONFIG.projectsExpandedDisplay || 10;
     
     let displayProjects = projects;
     if (!showingAlternatives && projects.length > initialDisplay) {
@@ -516,11 +523,12 @@ const AIMApp = (function() {
       elements.projectsCount.textContent = projects.length;
     }
     
-    // Render project cards
-    if (displayProjects.length === 0) {
+    // Render project cards or empty state
+    if (!displayProjects || displayProjects.length === 0) {
+      // EMPTY STATE
       container.innerHTML = `
-        <div class="empty-state">
-          <p class="insight-placeholder">Complete more of your AIM to unlock personalized project recommendations.</p>
+        <div class="empty-state" style="text-align: center; padding: 20px;">
+          <p class="insight-placeholder" style="color: #666; margin: 0 0 16px 0;">Complete more of your AIM to unlock personalized project recommendations.</p>
           <button class="btn-secondary" id="projectsAimOneBtn">Continue in AIM ONE</button>
         </div>
       `;
