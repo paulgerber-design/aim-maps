@@ -603,6 +603,65 @@ button {
   gap: 10px;
 }
 
+/* Redirect Modal (overlay style) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.redirect-modal {
+  max-width: 440px;
+}
+
+.redirect-modal h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.3rem;
+  color: #1a1a1a;
+}
+
+.redirect-message {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.redirect-countdown {
+  margin: 0 0 20px 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.redirect-countdown #countdownNumber {
+  font-weight: 600;
+  color: #2a6f97;
+}
+
+.redirect-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.redirect-fallback {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.redirect-fallback a {
+  color: #2a6f97;
+}
+
 /* ==========================================================================
    Table Overlay
    ========================================================================== */
