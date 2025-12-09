@@ -101,20 +101,25 @@ const AIMChartRenderer = (function() {
 
     // Get the value for heatmap - support both old and new pole names
     let val = 50;
+    let heatType = 'confidence';
     if (heatmapType === 'confidence') {
       val = descriptor.confidence || 50;
+      heatType = 'confidence';
     } else if (heatmapType === 'adapting' || heatmapType === 'ac') {
       const v = descriptor.pole_ac_value;
       val = v !== null && v !== undefined ? ((v + 3) / 6) * 100 : 50;
+      heatType = 'pole';
     } else if (heatmapType === 'celebrating' || heatmapType === 'ce') {
       const v = descriptor.pole_ce_value;
       val = v !== null && v !== undefined ? ((v + 3) / 6) * 100 : 50;
+      heatType = 'pole';
     } else if (heatmapType === 'connecting' || heatmapType === 'cx') {
       const v = descriptor.pole_cx_value;
       val = v !== null && v !== undefined ? ((v + 3) / 6) * 100 : 50;
+      heatType = 'pole';
     }
 
-    const heat = computeHeatColor(val);
+    const heat = computeHeatColor(val, heatType);
     // Blend heat with base color
     return blendColors(base, heat, alpha, AIM_CONFIG.heatBlendRatio);
   }
@@ -135,15 +140,42 @@ const AIMChartRenderer = (function() {
 
   /**
    * Compute heatmap color for a value
+   * For confidence: red to green gradient
+   * For poles: blue (left) → green (balanced) → orange (right)
    * @param {number} val - Value (0-100)
+   * @param {string} type - 'confidence' or pole type
    * @returns {Object} - {r, g, b}
    */
-  function computeHeatColor(val) {
-    const ratio = Math.max(0, Math.min(100, val)) / 100;
-    const hue = 120 * ratio;
-    const hslColor = d3.hsl(hue, 0.65, 0.45);
-    const rgb = hslColor.rgb();
-    return { r: Math.round(rgb.r), g: Math.round(rgb.g), b: Math.round(rgb.b) };
+  function computeHeatColor(val, type = 'confidence') {
+    const v = Math.max(0, Math.min(100, val));
+    
+    if (type === 'confidence') {
+      // Keep original red-to-green for confidence
+      const ratio = v / 100;
+      const hue = 120 * ratio;
+      const hslColor = d3.hsl(hue, 0.65, 0.45);
+      const rgb = hslColor.rgb();
+      return { r: Math.round(rgb.r), g: Math.round(rgb.g), b: Math.round(rgb.b) };
+    } else {
+      // For poles: blue (0) → green (50) → orange (100)
+      // 0-50: blue (#5c7cfa) to green (#51cf66)
+      // 50-100: green (#51cf66) to orange (#ffa94d)
+      if (v <= 50) {
+        // Blue to Green
+        const ratio = v / 50;
+        const r = Math.round(92 + (81 - 92) * ratio);   // 92 → 81
+        const g = Math.round(124 + (207 - 124) * ratio); // 124 → 207
+        const b = Math.round(250 + (102 - 250) * ratio); // 250 → 102
+        return { r, g, b };
+      } else {
+        // Green to Orange
+        const ratio = (v - 50) / 50;
+        const r = Math.round(81 + (255 - 81) * ratio);   // 81 → 255
+        const g = Math.round(207 + (169 - 207) * ratio); // 207 → 169
+        const b = Math.round(102 + (77 - 102) * ratio);  // 102 → 77
+        return { r, g, b };
+      }
+    }
   }
 
   /**

@@ -308,8 +308,14 @@ const AIMApp = (function() {
   
   /**
    * Show redirect modal with countdown before opening AIM ONE
+   * Opens window immediately to avoid popup blocker, modal stays for user to see
    */
   function showRedirectModal(copiedMessage) {
+    const aimOneUrl = AIM_CONFIG.getAimOneUrl();
+    
+    // Open immediately (in response to user click) to avoid popup blocker
+    const newWindow = window.open(aimOneUrl, '_blank');
+    
     // Create or update modal
     let modal = document.getElementById('redirectModal');
     if (!modal) {
@@ -321,63 +327,47 @@ const AIMApp = (function() {
         <div class="modal-content redirect-modal">
           <h3>Opening AIM ONE</h3>
           <p class="redirect-message">We've copied your session info to the clipboard. Please paste it in AIM ONE to continue.</p>
-          <p class="redirect-countdown">Redirecting in <span id="countdownNumber">5</span> seconds...</p>
+          <p class="redirect-status" id="redirectStatus">Opening AIM ONE...</p>
           <div class="redirect-actions">
-            <button class="btn-secondary" id="redirectCancelBtn">Cancel</button>
-            <button class="btn-primary" id="redirectNowBtn">Open Now</button>
+            <button class="btn-primary" id="redirectCloseBtn">Got it</button>
           </div>
-          <p class="redirect-fallback">If redirect doesn't work, <a href="#" id="redirectManualLink">click here</a>.</p>
+          <p class="redirect-fallback">If it didn't open, <a href="#" id="redirectManualLink" target="_blank">click here</a>.</p>
         </div>
       `;
       document.body.appendChild(modal);
       
-      // Add cancel handler
-      modal.querySelector('#redirectCancelBtn').addEventListener('click', () => {
-        clearInterval(modal.countdownInterval);
+      // Add close handler
+      modal.querySelector('#redirectCloseBtn').addEventListener('click', () => {
         modal.hidden = true;
       });
       
       // Add backdrop click handler
       modal.querySelector('.modal-backdrop').addEventListener('click', () => {
-        clearInterval(modal.countdownInterval);
         modal.hidden = true;
       });
     }
     
-    // Set up the redirect
-    const aimOneUrl = AIM_CONFIG.getAimOneUrl();
-    const countdownEl = modal.querySelector('#countdownNumber');
-    const nowBtn = modal.querySelector('#redirectNowBtn');
+    const statusEl = modal.querySelector('#redirectStatus');
     const manualLink = modal.querySelector('#redirectManualLink');
     
     manualLink.href = aimOneUrl;
-    manualLink.target = '_blank';
     
-    // Open AIM ONE function
-    const doRedirect = () => {
-      clearInterval(modal.countdownInterval);
-      modal.hidden = true;
+    // Update status based on whether window opened
+    if (newWindow) {
+      statusEl.textContent = 'AIM ONE opened in a new tab.';
+      statusEl.style.color = '#2e7d32';
+    } else {
+      statusEl.textContent = 'Popup was blocked. Please click the link below.';
+      statusEl.style.color = '#c62828';
+    }
+    
+    manualLink.onclick = (e) => {
+      e.preventDefault();
       window.open(aimOneUrl, '_blank');
     };
     
-    nowBtn.onclick = doRedirect;
-    manualLink.onclick = (e) => {
-      e.preventDefault();
-      doRedirect();
-    };
-    
-    // Start countdown
-    let seconds = 5;
-    countdownEl.textContent = seconds;
+    // Show modal
     modal.hidden = false;
-    
-    modal.countdownInterval = setInterval(() => {
-      seconds--;
-      countdownEl.textContent = seconds;
-      if (seconds <= 0) {
-        doRedirect();
-      }
-    }, 1000);
   }
 
   /**
@@ -533,7 +523,8 @@ const AIMApp = (function() {
       const color = AIM_CONFIG.pillarColors[p - 1];
       const pillarComplete = completeness.pillars[p];
       const isSelected = selectedPillar === p;
-      const isIncomplete = !pillarComplete.complete;
+      // Only incomplete if filled is 0 (nothing entered at all)
+      const isIncomplete = pillarComplete.filled === 0;
       
       html += `
         <div class="legend-chip ${isSelected ? 'selected' : ''} ${isIncomplete ? 'incomplete' : ''}" 
@@ -543,7 +534,7 @@ const AIMApp = (function() {
              style="--pillar-color: ${color}">
           <span class="dot" style="background: ${color}"></span>
           <span class="pillar-name">${name}</span>
-          ${isIncomplete ? `<span class="incomplete-badge">${pillarComplete.filled}/${pillarComplete.total}</span>` : ''}
+          ${!pillarComplete.complete ? `<span class="incomplete-badge">${pillarComplete.filled}/${pillarComplete.total}</span>` : ''}
         </div>
       `;
     }
@@ -558,10 +549,10 @@ const AIMApp = (function() {
         const pillarName = chip.dataset.pillarName;
         
         if (isIncomplete) {
-          // Show modal for incomplete pillar
+          // Show modal for incomplete pillar (0 items filled)
           showIncompleteModal(pillarName, pillar);
         } else {
-          // Navigate normally
+          // Navigate normally (has some content)
           AIMState.navigateToPillar(pillar);
         }
       });
@@ -1035,21 +1026,43 @@ const AIMApp = (function() {
   // ==========================================================================
 
   /**
-   * Update heatmap legend
+   * Update heatmap legend with color scale
    */
   function updateHeatmapLegend(type) {
     if (!elements.heatmapLegend) return;
     
     const config = AIM_CONFIG.heatmapTypes[type];
-    if (config) {
-      elements.heatmapLegend.textContent = config.description;
-    } else {
-      elements.heatmapLegend.textContent = '';
-    }
+    const poleConfig = AIM_CONFIG.poles[type];
     
-    // Update info tooltip
-    if (elements.heatmapInfo && config) {
-      elements.heatmapInfo.title = config.description;
+    if (type === 'off') {
+      elements.heatmapLegend.innerHTML = '';
+    } else if (poleConfig) {
+      // Pole heatmap - show color scale with labels
+      const leftName = poleConfig.left.name;
+      const rightName = poleConfig.right.name;
+      elements.heatmapLegend.innerHTML = `
+        <div class="heatmap-scale">
+          <div class="scale-bar pole-scale"></div>
+          <div class="scale-labels">
+            <span class="scale-left">${leftName}</span>
+            <span class="scale-center">Balanced</span>
+            <span class="scale-right">${rightName}</span>
+          </div>
+        </div>
+      `;
+    } else if (type === 'confidence') {
+      // Confidence heatmap - show red to green
+      elements.heatmapLegend.innerHTML = `
+        <div class="heatmap-scale">
+          <div class="scale-bar confidence-scale"></div>
+          <div class="scale-labels">
+            <span class="scale-left">Low</span>
+            <span class="scale-right">Strong</span>
+          </div>
+        </div>
+      `;
+    } else {
+      elements.heatmapLegend.innerHTML = '';
     }
   }
 

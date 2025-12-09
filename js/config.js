@@ -211,8 +211,8 @@ const AIM_CONFIG = {
   
   /** Message templates for incomplete data modal */
   incompleteMessages: {
-    generic: "Let's explore a little more to understand you better.",
-    pillar: "Let's explore a little more about your {pillarName}.",
+    generic: "To unlock personalized insights",
+    pillar: "To unlock more about your {pillarName}",
     cta: "Continue with AIM ONE",
     benefit: "Easy questions for you. Personalized insights for your growth."
   }
