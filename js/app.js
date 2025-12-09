@@ -45,6 +45,7 @@ const AIMApp = (function() {
       insightsSection: document.getElementById('insightsSection'),
       insightsToggle: document.querySelector('#insightsSection .section-toggle'),
       insightsContent: document.getElementById('insightsContent'),
+      insightsOverview: document.getElementById('insightsOverview'),
       insightOverviewText: document.getElementById('insightOverviewText'),
       insightsObservations: document.getElementById('insightsObservations'),
       insightObservationsText: document.getElementById('insightObservationsText'),
@@ -268,30 +269,115 @@ const AIMApp = (function() {
 
   /**
    * Open AIM ONE with current Gist context
-   * Copies the viewer URL to clipboard so user can paste it in AIM ONE
+   * Shows countdown modal, copies contextual message, then redirects
+   * @param {Object} options - Options for the handoff
+   * @param {number} options.pillar - Pillar number if focusing on a pillar
+   * @param {string} options.pillarName - Pillar name for context
+   * @param {string} options.context - Context type: 'pillar', 'projects', 'insights', or 'general'
    */
-  function openAimOne(focusPillar) {
-    // Build the viewer URL that user will paste into AIM ONE
-    let viewerUrl = window.location.origin + window.location.pathname;
+  function openAimOne(options = {}) {
+    const { pillar, pillarName, context = 'general' } = options;
     
+    // Build the viewer URL
+    let viewerUrl = window.location.origin + window.location.pathname;
     if (currentGistId) {
       viewerUrl += '?gist=' + currentGistId;
     }
+    if (pillar) {
+      viewerUrl += (currentGistId ? '&' : '?') + 'pillar=' + pillar;
+    }
     
-    if (focusPillar) {
-      viewerUrl += (currentGistId ? '&' : '?') + 'pillar=' + focusPillar;
+    // Build contextual message based on what user clicked
+    let message = viewerUrl;
+    if (context === 'pillar' && pillarName) {
+      message = `${viewerUrl}\n\nLet's continue exploring ${pillarName}.`;
+    } else if (context === 'projects') {
+      message = `${viewerUrl}\n\nHelp me create some project recommendations.`;
+    } else if (context === 'insights') {
+      message = `${viewerUrl}\n\nHelp me unlock personalized insights.`;
     }
     
     // Copy to clipboard
-    navigator.clipboard.writeText(viewerUrl).then(() => {
-      showToast('Link copied! Paste it in AIM ONE to continue.');
-    }).catch(() => {
-      // Fallback: show the URL in an alert
-      showToast('Copy this link: ' + viewerUrl);
+    navigator.clipboard.writeText(message).catch(() => {
+      // Fallback handled in modal
     });
     
-    // Open AIM ONE
-    window.open(AIM_CONFIG.getAimOneUrl(), '_blank');
+    // Show redirect modal with countdown
+    showRedirectModal(message);
+  }
+  
+  /**
+   * Show redirect modal with countdown before opening AIM ONE
+   */
+  function showRedirectModal(copiedMessage) {
+    // Create or update modal
+    let modal = document.getElementById('redirectModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'redirectModal';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-backdrop"></div>
+        <div class="modal-content redirect-modal">
+          <h3>Opening AIM ONE</h3>
+          <p class="redirect-message">We've copied your session info to the clipboard. Please paste it in AIM ONE to continue.</p>
+          <p class="redirect-countdown">Redirecting in <span id="countdownNumber">5</span> seconds...</p>
+          <div class="redirect-actions">
+            <button class="btn-secondary" id="redirectCancelBtn">Cancel</button>
+            <button class="btn-primary" id="redirectNowBtn">Open Now</button>
+          </div>
+          <p class="redirect-fallback">If redirect doesn't work, <a href="#" id="redirectManualLink">click here</a>.</p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Add cancel handler
+      modal.querySelector('#redirectCancelBtn').addEventListener('click', () => {
+        clearInterval(modal.countdownInterval);
+        modal.hidden = true;
+      });
+      
+      // Add backdrop click handler
+      modal.querySelector('.modal-backdrop').addEventListener('click', () => {
+        clearInterval(modal.countdownInterval);
+        modal.hidden = true;
+      });
+    }
+    
+    // Set up the redirect
+    const aimOneUrl = AIM_CONFIG.getAimOneUrl();
+    const countdownEl = modal.querySelector('#countdownNumber');
+    const nowBtn = modal.querySelector('#redirectNowBtn');
+    const manualLink = modal.querySelector('#redirectManualLink');
+    
+    manualLink.href = aimOneUrl;
+    manualLink.target = '_blank';
+    
+    // Open AIM ONE function
+    const doRedirect = () => {
+      clearInterval(modal.countdownInterval);
+      modal.hidden = true;
+      window.open(aimOneUrl, '_blank');
+    };
+    
+    nowBtn.onclick = doRedirect;
+    manualLink.onclick = (e) => {
+      e.preventDefault();
+      doRedirect();
+    };
+    
+    // Start countdown
+    let seconds = 5;
+    countdownEl.textContent = seconds;
+    modal.hidden = false;
+    
+    modal.countdownInterval = setInterval(() => {
+      seconds--;
+      countdownEl.textContent = seconds;
+      if (seconds <= 0) {
+        doRedirect();
+      }
+    }, 1000);
   }
 
   /**
@@ -447,12 +533,17 @@ const AIMApp = (function() {
       const color = AIM_CONFIG.pillarColors[p - 1];
       const pillarComplete = completeness.pillars[p];
       const isSelected = selectedPillar === p;
+      const isIncomplete = !pillarComplete.complete;
       
       html += `
-        <div class="legend-chip ${isSelected ? 'selected' : ''}" data-pillar="${p}" style="--pillar-color: ${color}">
+        <div class="legend-chip ${isSelected ? 'selected' : ''} ${isIncomplete ? 'incomplete' : ''}" 
+             data-pillar="${p}" 
+             data-incomplete="${isIncomplete}"
+             data-pillar-name="${name}"
+             style="--pillar-color: ${color}">
           <span class="dot" style="background: ${color}"></span>
           <span class="pillar-name">${name}</span>
-          ${!pillarComplete.complete ? `<span class="incomplete-badge">${pillarComplete.filled}/${pillarComplete.total}</span>` : ''}
+          ${isIncomplete ? `<span class="incomplete-badge">${pillarComplete.filled}/${pillarComplete.total}</span>` : ''}
         </div>
       `;
     }
@@ -463,7 +554,16 @@ const AIMApp = (function() {
     elements.legendContainer.querySelectorAll('.legend-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const pillar = parseInt(chip.dataset.pillar);
-        AIMState.navigateToPillar(pillar);
+        const isIncomplete = chip.dataset.incomplete === 'true';
+        const pillarName = chip.dataset.pillarName;
+        
+        if (isIncomplete) {
+          // Show modal for incomplete pillar
+          showIncompleteModal(pillarName, pillar);
+        } else {
+          // Navigate normally
+          AIMState.navigateToPillar(pillar);
+        }
       });
     });
   }
@@ -536,7 +636,7 @@ const AIMApp = (function() {
       // Bind the button
       const btn = document.getElementById('projectsAimOneBtn');
       if (btn) {
-        btn.addEventListener('click', () => openAimOne());
+        btn.addEventListener('click', () => openAimOne({ context: 'projects' }));
       }
       
       if (elements.projectsAlternative) {
@@ -631,14 +731,37 @@ const AIMApp = (function() {
     const observations = data[insightPrefix + 'observations'] || data.insight_observations;
     const projectsInsight = data[insightPrefix + 'projects'] || data.insight_projects;
     
-    // Update overview
-    if (elements.insightOverviewText) {
-      if (overview) {
-        elements.insightOverviewText.textContent = overview;
-        elements.insightOverviewText.classList.remove('insight-placeholder');
+    // Check if we have any insights
+    const hasInsights = overview || observations || projectsInsight;
+    
+    // Get the overview container
+    const overviewBlock = elements.insightsOverview || document.getElementById('insightsOverview');
+    
+    // Update overview / empty state
+    if (overviewBlock) {
+      if (hasInsights && overview) {
+        // Show insight content
+        overviewBlock.innerHTML = `<p id="insightOverviewText">${overview}</p>`;
+        overviewBlock.classList.remove('empty-state');
+      } else if (!hasInsights) {
+        // Show empty state with button
+        overviewBlock.innerHTML = `
+          <div class="empty-state" style="text-align: center; padding: 20px;">
+            <p class="insight-placeholder" style="color: #666; margin: 0 0 16px 0;">Complete more of your AIM to unlock personalized insights.</p>
+            <button class="btn-secondary" id="insightsAimOneBtn">Continue in AIM ONE</button>
+          </div>
+        `;
+        overviewBlock.classList.add('empty-state');
+        
+        // Bind the button
+        const btn = document.getElementById('insightsAimOneBtn');
+        if (btn) {
+          btn.addEventListener('click', () => openAimOne({ context: 'insights' }));
+        }
       } else {
-        elements.insightOverviewText.textContent = 'Complete more of your AIM to unlock personalized insights.';
-        elements.insightOverviewText.classList.add('insight-placeholder');
+        // Has some insights but no overview
+        overviewBlock.innerHTML = '';
+        overviewBlock.classList.remove('empty-state');
       }
     }
     
@@ -697,13 +820,20 @@ const AIMApp = (function() {
    * Handle click on incomplete wedge
    */
   function handleIncompleteClick(info) {
+    showIncompleteModal(info.pillarName, info.pillar);
+  }
+  
+  /**
+   * Show incomplete modal for a pillar (called from wedge or legend click)
+   */
+  function showIncompleteModal(pillarName, pillar) {
     if (!elements.incompleteModal) return;
     
     // Update modal content
     const messages = AIM_CONFIG.incompleteMessages;
     
     if (elements.incompleteModalTitle) {
-      const title = messages.pillar.replace('{pillarName}', info.pillarName);
+      const title = messages.pillar.replace('{pillarName}', pillarName);
       elements.incompleteModalTitle.textContent = title;
     }
     
@@ -714,8 +844,8 @@ const AIMApp = (function() {
     // Set up CTA click - use openAimOne which includes Gist context
     if (elements.incompleteModalCta) {
       elements.incompleteModalCta.onclick = () => {
-        openAimOne(info.pillar);
         closeIncompleteModal();
+        openAimOne({ pillar: pillar, pillarName: pillarName, context: 'pillar' });
       };
     }
     
