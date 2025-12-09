@@ -80,11 +80,6 @@ const AIMChartRenderer = (function() {
    * @returns {string} - Fill color
    */
   function computeFillColor(descriptor) {
-    // Check if this segment is incomplete
-    if (descriptor.incomplete) {
-      return 'url(#incompletePattern)';
-    }
-    
     const pillarColors = AIM_CONFIG.pillarColors;
     const depthAlpha = AIM_CONFIG.depthAlpha;
     const heatmapType = AIMState.getHeatmapType();
@@ -92,7 +87,13 @@ const AIMChartRenderer = (function() {
     // Parse pillar base color
     const baseHex = pillarColors[descriptor.pillar - 1];
     const base = hexToRgb(baseHex);
-    const alpha = depthAlpha[descriptor.depth];
+    
+    // For incomplete segments, use a much lighter alpha to indicate "placeholder"
+    // but still show the pillar color
+    let alpha = depthAlpha[descriptor.depth];
+    if (descriptor.incomplete) {
+      alpha = alpha * 0.4; // Make incomplete segments more transparent
+    }
 
     if (heatmapType === 'off') {
       return `rgba(${base.r},${base.g},${base.b},${alpha})`;
@@ -268,9 +269,13 @@ const AIMChartRenderer = (function() {
         const start = (p - 1) * majorStep;
         const end = p * majorStep;
         const pillarData = aimData.pillars[p];
-        const title = pillarData.title || pillarData.belief;
-        const label = AIMUtils.truncateText(title, maxCharsByDepth[1]);
         const isIncomplete = !AIMUtils.isNodeComplete(pillarData);
+        
+        // For incomplete pillars, show the pillar name; for complete, show belief
+        const pillarName = aimData.pillarNames[p] || `Pillar ${p}`;
+        const beliefTitle = pillarData.title || pillarData.belief;
+        const displayTitle = isIncomplete ? pillarName : (beliefTitle || pillarName);
+        const label = AIMUtils.truncateText(displayTitle, maxCharsByDepth[1]);
 
         descriptors.push({
           depth: 1,
@@ -283,8 +288,9 @@ const AIMChartRenderer = (function() {
           outerRadius: radii.pillarEnd,
           belief: pillarData.belief,
           label: label,
+          pillarName: pillarName, // Store for modal display
           confidence: pillarData.confidence || 50,
-          showLabel: !isIncomplete,
+          showLabel: true, // Always show pillar names
           incomplete: isIncomplete,
           pole_ac_value: pillarData.pole_ac_value,
           pole_ac_letter: pillarData.pole_ac_letter,

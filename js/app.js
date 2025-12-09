@@ -1,7 +1,7 @@
 /**
  * AIM Viewer Application
  * Main entry point that coordinates all modules
- * v2.0.0 - Phase 5a: New layout, collapsible sections, AIM ONE integration
+ * v2.1.0 - Phase 5a: Updated buttons, Gist passing to AIM ONE
  */
 
 const AIMApp = (function() {
@@ -13,6 +13,7 @@ const AIMApp = (function() {
 
   let elements = {};
   let showingAlternatives = false;
+  let currentGistId = null; // Track the current Gist ID
 
   function cacheElements() {
     elements = {
@@ -24,14 +25,8 @@ const AIMApp = (function() {
       breadcrumb: document.getElementById('breadcrumb'),
       mainContent: document.getElementById('mainContent'),
       
-      // Inputs
-      fileInput: document.getElementById('csvFileInput'),
-      
       // Buttons
-      resetBtn: document.getElementById('resetBtn'),
-      refineBtn: document.getElementById('refineBtn'),
-      uploadBtn: document.getElementById('uploadBtn'),
-      saveBtn: document.getElementById('saveBtn'),
+      aimOneBtn: document.getElementById('aimOneBtn'),
       viewTableBtn: document.getElementById('viewTableBtn'),
       
       // Heatmap controls
@@ -113,36 +108,11 @@ const AIMApp = (function() {
    * Set up event listeners
    */
   function setupEventListeners() {
-    // File upload
-    if (elements.uploadBtn) {
-      elements.uploadBtn.addEventListener('click', () => {
-        elements.fileInput?.click();
+    // AIM ONE button - opens Claude project with Gist context
+    if (elements.aimOneBtn) {
+      elements.aimOneBtn.addEventListener('click', () => {
+        openAimOne();
       });
-    }
-    
-    if (elements.fileInput) {
-      elements.fileInput.addEventListener('change', handleFileUpload);
-    }
-    
-    // Reset/Home button
-    if (elements.resetBtn) {
-      elements.resetBtn.addEventListener('click', () => {
-        AIMState.navigateToFullView();
-        render();
-      });
-    }
-    
-    // Refine in AIM ONE button
-    if (elements.refineBtn) {
-      elements.refineBtn.addEventListener('click', () => {
-        const url = AIMUtils.buildAimOneUrl();
-        window.open(url, '_blank');
-      });
-    }
-    
-    // Save button
-    if (elements.saveBtn) {
-      elements.saveBtn.addEventListener('click', downloadCSV);
     }
     
     // Heatmap select
@@ -271,6 +241,8 @@ const AIMApp = (function() {
     const gistId = params.get('gist');
     
     if (gistId) {
+      currentGistId = gistId; // Store for AIM ONE linking
+      
       try {
         const response = await fetch(`https://api.github.com/gists/${gistId}`);
         if (!response.ok) throw new Error('Failed to fetch gist');
@@ -295,35 +267,27 @@ const AIMApp = (function() {
   }
 
   /**
-   * Handle file upload
+   * Open AIM ONE with current Gist context
    */
-  function handleFileUpload(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  function openAimOne(focusPillar) {
+    let url = AIM_CONFIG.getAimOneUrl();
     
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result;
-      if (typeof content === 'string') {
-        try {
-          const rows = d3.csvParse(content);
-          const parsed = AIMDataParser.parseCSV(rows);
-          if (parsed) {
-            AIMState.setData(parsed);
-            render();
-          } else {
-            alert('Failed to parse CSV file. Please check the format.');
-          }
-        } catch (err) {
-          console.error('Error parsing CSV:', err);
-          alert('Failed to parse CSV file. Please check the format.');
-        }
-      }
-    };
-    reader.readAsText(file);
+    // Build context for AIM ONE
+    const contextParts = [];
     
-    // Reset input so same file can be uploaded again
-    event.target.value = '';
+    if (currentGistId) {
+      contextParts.push(`gist:${currentGistId}`);
+    }
+    
+    if (focusPillar) {
+      contextParts.push(`pillar:${focusPillar}`);
+    }
+    
+    if (contextParts.length > 0) {
+      url += '?context=' + encodeURIComponent(contextParts.join(','));
+    }
+    
+    window.open(url, '_blank');
   }
 
   // ==========================================================================
@@ -496,7 +460,19 @@ const AIMApp = (function() {
     
     // Render project cards
     if (displayProjects.length === 0) {
-      elements.projectsList.innerHTML = '<p class="insight-placeholder">No project recommendations yet. Continue with AIM ONE to unlock personalized recommendations.</p>';
+      elements.projectsList.innerHTML = `
+        <div class="empty-state">
+          <p class="insight-placeholder">Complete more of your AIM to unlock personalized project recommendations.</p>
+          <button class="btn-secondary" id="projectsAimOneBtn">Continue in AIM ONE</button>
+        </div>
+      `;
+      
+      // Bind the button
+      const btn = document.getElementById('projectsAimOneBtn');
+      if (btn) {
+        btn.addEventListener('click', () => openAimOne());
+      }
+      
       if (elements.projectsAlternative) {
         elements.projectsAlternative.style.display = 'none';
       }
@@ -635,12 +611,10 @@ const AIMApp = (function() {
       elements.incompleteModalMessage.textContent = messages.benefit;
     }
     
-    // Set up CTA click
+    // Set up CTA click - use openAimOne which includes Gist context
     if (elements.incompleteModalCta) {
       elements.incompleteModalCta.onclick = () => {
-        const focus = `pillar:${info.pillar}`;
-        const url = AIMUtils.buildAimOneUrl(focus);
-        window.open(url, '_blank');
+        openAimOne(info.pillar);
         closeIncompleteModal();
       };
     }
@@ -897,19 +871,14 @@ const AIMApp = (function() {
     
     notice.innerHTML = `
       <h3>Welcome to AIM Viewer</h3>
-      <p>${message || 'Upload a CSV file or load from a Gist to visualize your AIM.'}</p>
-      <button class="btn-primary" id="noDataUploadBtn">Upload CSV</button>
-      <p style="margin-top: 16px; font-size: 0.9rem; color: #888;">
-        Or <a href="${AIMUtils.buildAimOneUrl()}" target="_blank">start with AIM ONE</a> to create your first map.
-      </p>
+      <p>${message || 'Start with AIM ONE to create your personalized map.'}</p>
+      <button class="btn-primary" id="noDataAimOneBtn">Start with AIM ONE</button>
     `;
     
-    // Bind upload button
-    const uploadBtn = document.getElementById('noDataUploadBtn');
-    if (uploadBtn) {
-      uploadBtn.addEventListener('click', () => {
-        elements.fileInput?.click();
-      });
+    // Bind AIM ONE button
+    const aimOneBtn = document.getElementById('noDataAimOneBtn');
+    if (aimOneBtn) {
+      aimOneBtn.addEventListener('click', () => openAimOne());
     }
     
     notice.style.display = 'block';
