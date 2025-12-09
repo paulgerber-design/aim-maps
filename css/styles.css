@@ -709,17 +709,33 @@ button {
 
 #noDataNotice {
   text-align: center;
-  padding: 40px 20px;
+  padding: 60px 20px;
   color: #666;
 }
 
 #noDataNotice h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
   color: #333;
+  font-size: 1.3rem;
 }
 
 #noDataNotice p {
-  margin: 0 0 20px 0;
+  margin: 0 0 24px 0;
+  font-size: 1rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-state p {
+  margin: 0 0 16px 0;
+}
+
+.empty-state .btn-secondary {
+  padding: 10px 20px;
+  font-size: 0.9rem;
 }
 
 /* ==========================================================================
