@@ -268,26 +268,39 @@ const AIMApp = (function() {
 
   /**
    * Open AIM ONE with current Gist context
+   * Uses Claude's ?q= parameter to pre-fill the message
    */
   function openAimOne(focusPillar) {
-    let url = AIM_CONFIG.getAimOneUrl();
-    
-    // Build context for AIM ONE
-    const contextParts = [];
+    // Build the viewer URL that will be sent to AIM ONE
+    let viewerUrl = window.location.origin + window.location.pathname;
     
     if (currentGistId) {
-      contextParts.push(`gist:${currentGistId}`);
+      viewerUrl += '?gist=' + currentGistId;
     }
     
     if (focusPillar) {
-      contextParts.push(`pillar:${focusPillar}`);
+      viewerUrl += (currentGistId ? '&' : '?') + 'pillar=' + focusPillar;
     }
     
-    if (contextParts.length > 0) {
-      url += '?context=' + encodeURIComponent(contextParts.join(','));
+    // Get the base AIM ONE URL
+    const aimOneBase = AIM_CONFIG.getAimOneUrl();
+    
+    // Check if it's a project URL or regular claude.ai
+    // Projects: claude.ai/project/{id}
+    // Regular: claude.ai/new
+    
+    let targetUrl;
+    if (aimOneBase.includes('/project/')) {
+      // For projects, we need to append /new and add ?q=
+      // Format: claude.ai/project/{id}/new?q=MESSAGE
+      const projectBase = aimOneBase.replace(/\/$/, ''); // Remove trailing slash if any
+      targetUrl = projectBase + '?q=' + encodeURIComponent(viewerUrl);
+    } else {
+      // For regular claude.ai, use /new?q=
+      targetUrl = 'https://claude.ai/new?q=' + encodeURIComponent(viewerUrl);
     }
     
-    window.open(url, '_blank');
+    window.open(targetUrl, '_blank');
   }
 
   // ==========================================================================
