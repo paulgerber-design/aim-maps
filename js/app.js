@@ -421,7 +421,13 @@ const AIMApp = (function() {
    */
   function renderProjects() {
     const data = AIMState.getData();
-    if (!elements.projectsList || !data) return;
+    
+    // Try to get projectsList, fallback to projectsContent
+    const container = elements.projectsList || document.getElementById('projectsList');
+    if (!container || !data) {
+      console.warn('renderProjects: No container or data');
+      return;
+    }
     
     const state = AIMState.getState();
     const selectedPillar = AIMState.getSelectedPillar();
@@ -460,7 +466,7 @@ const AIMApp = (function() {
     
     // Render project cards
     if (displayProjects.length === 0) {
-      elements.projectsList.innerHTML = `
+      container.innerHTML = `
         <div class="empty-state">
           <p class="insight-placeholder">Complete more of your AIM to unlock personalized project recommendations.</p>
           <button class="btn-secondary" id="projectsAimOneBtn">Continue in AIM ONE</button>
@@ -496,7 +502,7 @@ const AIMApp = (function() {
         `;
       });
       
-      elements.projectsList.innerHTML = html;
+      container.innerHTML = html;
       
       // Show/hide alternatives button
       if (elements.projectsAlternative) {
