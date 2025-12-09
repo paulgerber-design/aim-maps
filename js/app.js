@@ -1,7 +1,7 @@
 /**
  * AIM Viewer Application
  * Main entry point that coordinates all modules
- * v2.1.0 - Phase 5a: Updated buttons, Gist passing to AIM ONE
+ * v2.2.0 - Phase 5b: Enhanced project cards with action/measure/benefit
  */
 
 const AIMApp = (function() {
@@ -547,17 +547,51 @@ const AIMApp = (function() {
       
       displayProjects.forEach(project => {
         const pillarName = project.pillar ? (data.pillarNames[project.pillar] || `Pillar ${project.pillar}`) : '';
+        const pillarColor = project.pillar ? AIM_CONFIG.pillarColors[project.pillar - 1] : '#888';
         const type = project.type || 'practice';
         const typeLabel = AIM_CONFIG.projectTypes[type]?.label || type;
         
+        // Build measure string (e.g., "10 → 30 minutes, 3×/week")
+        let measureStr = '';
+        if (project.measure && project.measure !== '—') {
+          const start = project.start && project.start !== '—' ? project.start : '';
+          const target = project.target && project.target !== '—' ? project.target : '';
+          const days = project.days && project.days !== '—' ? project.days : '';
+          
+          if (start && target) {
+            measureStr = `${start} → ${target} ${project.measure}`;
+          } else if (target) {
+            measureStr = `${target} ${project.measure}`;
+          } else if (project.measure) {
+            measureStr = project.measure;
+          }
+          
+          if (days) {
+            measureStr += measureStr ? `, ${days}×/week` : `${days}×/week`;
+          }
+        }
+        
+        // Action name (use action if different from name)
+        const actionName = project.action && project.action !== project.name ? project.action : '';
+        
+        // Benefit text
+        const benefit = project.benefit && project.benefit !== '—' ? project.benefit : '';
+        
+        // Duration for sprints
+        const duration = type === 'sprint' && project.duration ? project.duration : '';
+        
         html += `
-          <div class="project-card">
+          <div class="project-card" style="--pillar-color: ${pillarColor}">
             <div class="project-card-header">
               <span class="project-card-title">${project.name || 'Untitled Project'}</span>
-              <span class="project-card-type">${typeLabel}</span>
+              <span class="project-card-type type-${type}">${typeLabel}</span>
             </div>
-            ${project.project_rationale ? `<p class="project-card-rationale">${project.project_rationale}</p>` : ''}
-            ${pillarName ? `<div class="project-card-pillar">${pillarName}</div>` : ''}
+            ${actionName ? `<div class="project-card-action">${actionName}</div>` : ''}
+            ${measureStr ? `<div class="project-card-measure">${measureStr}</div>` : ''}
+            ${duration ? `<div class="project-card-duration">Duration: ${duration}</div>` : ''}
+            ${benefit ? `<p class="project-card-benefit">${benefit}</p>` : ''}
+            ${project.project_rationale && project.project_rationale !== '—' ? `<p class="project-card-rationale">${project.project_rationale}</p>` : ''}
+            ${pillarName ? `<div class="project-card-pillar"><span class="pillar-dot" style="background: ${pillarColor}"></span>${pillarName}</div>` : ''}
           </div>
         `;
       });
